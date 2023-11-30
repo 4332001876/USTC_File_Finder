@@ -1,0 +1,14 @@
+title: Optiver-Trading_at_the_Close
+lang: cn
+description: Optiver-Trading_at_the_Close
+
+remote_theme: rundocs/jekyll-rtd-theme
+
+readme_index:
+  with_frontmatter: true
+
+exclude:
+  - Makefile
+  - CNAME
+  - Gemfile
+  - Gemfile.lock

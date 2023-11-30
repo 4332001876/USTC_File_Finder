@@ -1,0 +1,99 @@
+http://sds.ustc.edu.cn/15443/list{page_num}.htm                                        大数据学院
+http://www.job.ustc.edu.cn/ArticleList.html?parentid=2&columnid=2028                   就业信息网   【不可翻页】
+https://finance.ustc.edu.cn/xzzx/list{page_num}.psp                                    财务处
+https://stuhome.ustc.edu.cn/2310/list{page_num}.htm                                    学工在线
+https://bwc.ustc.edu.cn/5655/list{page_num}.htm                                        保卫与校园管理处
+http://zhb.ustc.edu.cn/18534/list{page_num}.htm                                        科技成果转移转化办公室
+http://young.ustc.edu.cn/15056/list{page_num}.htm                                      青春科大
+http://cs.ustc.edu.cn/20158/list{page_num}.psp                                         计算机科学技术学院
+http://cybersec.ustc.edu.cn/zlxz_23830/list{page_num}.psp                              网络空间安全学院
+https://math.ustc.edu.cn/zyzx/list{page_num}.htm                                       数学科学学院
+
+
+
+
+
+
+https://www.teach.ustc.edu.cn/category/document/doc-administration/page/{page_num}     教务处  类别：管理规定
+https://www.teach.ustc.edu.cn/category/document/doc-file/page/{page_num}               教务处  类别：教字文件
+https://www.teach.ustc.edu.cn/category/document/doc-school-file/page/{page_num}        教务处  类别：校教字文件
+https://www.teach.ustc.edu.cn/category/document/doc-report/page/{page_num}             教务处  类别：教学简报
+https://www.teach.ustc.edu.cn/category/document/doc-research/page/{page_num}           教务处  类别：教学研究建设
+https://www.teach.ustc.edu.cn/category/document/doc-misc/page/{page_num}               教务处  类别：其他资料
+
+
+http://gradschool.ustc.edu.cn/column/178                                               研究生院  类别：培养工作-课程管理  【不可翻页】
+http://gradschool.ustc.edu.cn/column/179                                               研究生院  类别：培养工作-成绩管理  【不可翻页】
+http://gradschool.ustc.edu.cn/column/180                                               研究生院  类别：培养工作-研究生教育国际化  【不可翻页】
+http://gradschool.ustc.edu.cn/column/181                                               研究生院  类别：培养工作-培养计划  【不可翻页】
+http://gradschool.ustc.edu.cn/column/182                                               研究生院  类别：培养工作-教学研究  【不可翻页】
+http://gradschool.ustc.edu.cn/column/183                                               研究生院  类别：培养工作-国家奖学金  【不可翻页】
+http://gradschool.ustc.edu.cn/column/184                                               研究生院  类别：培养工作-研究生教育创新计划  【不可翻页】
+http://gradschool.ustc.edu.cn/column/185                                               研究生院  类别：培养工作-外聘专家  【不可翻页】
+http://gradschool.ustc.edu.cn/column/186                                               研究生院  类别：培养工作-其它  【不可翻页】
+http://gradschool.ustc.edu.cn/column/64                                                研究生院  类别：学籍奖励  【不可翻页】
+http://gradschool.ustc.edu.cn/column/65                                                研究生院  类别：学位授予  【不可翻页】
+http://gradschool.ustc.edu.cn/column/66                                                研究生院  类别：学科建设  【不可翻页】
+http://gradschool.ustc.edu.cn/column/67                                                研究生院  类别：优博论文  【不可翻页】
+http://gradschool.ustc.edu.cn/column/68                                                研究生院  类别：专业学位  【不可翻页】
+http://gradschool.ustc.edu.cn/column/69                                                研究生院  类别：导师工作  【不可翻页】
+http://gradschool.ustc.edu.cn/column/70                                                研究生院  类别：学科评估  【不可翻页】
+http://gradschool.ustc.edu.cn/column/72                                                研究生院  类别：规章制度-培养工作  【不可翻页】
+http://gradschool.ustc.edu.cn/column/73                                                研究生院  类别：规章制度-学籍奖励  【不可翻页】
+http://gradschool.ustc.edu.cn/column/74                                                研究生院  类别：规章制度-学位授予  【不可翻页】
+http://gradschool.ustc.edu.cn/column/75                                                研究生院  类别：规章制度-学科建设  【不可翻页】
+http://gradschool.ustc.edu.cn/column/76                                                研究生院  类别：规章制度-优博论文  【不可翻页】
+http://gradschool.ustc.edu.cn/column/77                                                研究生院  类别：规章制度-专业学位  【不可翻页】
+http://gradschool.ustc.edu.cn/column/78                                                研究生院  类别：规章制度-导师管理  【不可翻页】
+http://gradschool.ustc.edu.cn/column/156                                               研究生院  类别：规章制度-招生工作  【不可翻页】
+http://gradschool.ustc.edu.cn/column/12                                                研究生院  类别：事务指南  【不可翻页】
+
+http://press.ustc.edu.cn/tgxz/list{page_num}.htm                                       出版社    类别：投稿须知
+http://press.ustc.edu.cn/xtxxb/list{page_num}.htm                                      出版社    类别：选题信息表
+http://press.ustc.edu.cn/bzgf/list{page_num}.htm                                       出版社    类别：标准规范
+http://press.ustc.edu.cn/wjfg/list{page_num}.htm                                       出版社    类别：文件法规
+http://press.ustc.edu.cn/jxzy/list{page_num}.htm                                       出版社    类别：教学资源
+
+https://ispc.ustc.edu.cn/6299/list{page_num}.psp                                       信息科学试验中心   类别：申请与登记
+https://ispc.ustc.edu.cn/6298/list{page_num}.htm                                       信息科学试验中心   类别：技术文档
+
+http://ustcnet.ustc.edu.cn/33489/list{page_num}.psp                                    网络信息中心    类别：规章制度
+http://ustcnet.ustc.edu.cn/33490/list{page_num}.psp                                    网络信息中心    类别：网字文件
+http://ustcnet.ustc.edu.cn/33491/list{page_num}.psp                                    网络信息中心    类别：校网字文件
+http://ustcnet.ustc.edu.cn/33492/list{page_num}.psp                                    网络信息中心    类别：相关文件
+
+https://zhc.ustc.edu.cn/zcgll/list{page_num}.htm                                       资产与后勤保障处    类别：资产管理类
+https://zhc.ustc.edu.cn/fcgll/list{page_num}.htm                                       资产与后勤保障处    类别：房产管理类
+https://zhc.ustc.edu.cn/cggll/list{page_num}.htm                                       资产与后勤保障处    类别：采购管理类
+https://zhc.ustc.edu.cn/hqbzyzhgll/list{page_num}.htm                                  资产与后勤保障处    类别：后勤保障与综合管理类
+
+https://sist.ustc.edu.cn/5111/list{page_num}.htm                                       信息科学技术学院    类别：本科生教育
+https://sist.ustc.edu.cn/5104/list{page_num}.htm                                       信息科学技术学院    类别：研究生教育
+https://sist.ustc.edu.cn/5128/list{page_num}.htm                                       信息科学技术学院    类别：党建工作
+https://sist.ustc.edu.cn/5095/list{page_num}.htm                                       信息科学技术学院    类别：学习工作
+https://sist.ustc.edu.cn/5085/list{page_num}.htm                                       信息科学技术学院    类别：科学研究
+https://sist.ustc.edu.cn/5079/list{page_num}.htm                                       信息科学技术学院    类别：信息服务
+
+https://sz.ustc.edu.cn/wdxz_list/98-1.html                                             苏州高等研究院    类别：规则制度   【不可翻页】
+https://sz.ustc.edu.cn/wdxz_list/120-1.html                                            苏州高等研究院    类别：相关表格   【不可翻页】
+https://sz.ustc.edu.cn/wdxz_list/2338-1.html                                           苏州高等研究院    类别：校园文化-影像资料   【不可翻页】
+https://sz.ustc.edu.cn/wdxz_list/2339-1.html                                           苏州高等研究院    类别：校园文化-校园风光   【不可翻页】
+https://sz.ustc.edu.cn/wdxz_list/2340-1.html                                           苏州高等研究院    类别：校园文化-视觉识别   【不可翻页】
+
+https://sse.ustc.edu.cn/zcwj/list{page_num}.htm                                        软件学院      类别：政策文件
+https://sse.ustc.edu.cn/19878/list{page_num}.htm                                       软件学院      类别：教学管理
+https://sse.ustc.edu.cn/19879/list{page_num}.htm                                       软件学院      类别：招生管理
+https://sse.ustc.edu.cn/19880/list{page_num}.htm                                       软件学院      类别：就业管理
+https://sse.ustc.edu.cn/19882/list{page_num}.htm                                       软件学院      类别：工程实践
+https://sse.ustc.edu.cn/19884/list{page_num}.htm                                       软件学院      类别：党团建设
+https://sse.ustc.edu.cn/19885/list{page_num}.htm                                       软件学院      类别：学生管理
+
+https://iat.ustc.edu.cn/iat/x161/index.html                                            先进技术研究院  类别：公共服务
+https://iat.ustc.edu.cn/iat/x161/index_{page_num}.html                                 先进技术研究院  类别：公共服务   page_num 2开始！！
+https://iat.ustc.edu.cn/iat/x119/                                                      先进技术研究院  类别：人才招聘
+
+
+学工一体化需要登陆，暂缺
+
+单独的文件：
+https://368553.youtucc.com/stage/230617/368553.html?90045756=     本科招生网  招生简章

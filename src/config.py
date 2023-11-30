@@ -1,2 +1,2 @@
 class Config:
-    FINAL_RESULT_FILENAME = 'submission.csv'
+    SLEEP_TIME = 1

@@ -3,6 +3,8 @@
 ## 简介
 HappyBase 是FaceBook员工开发的操作HBase的python库, 其基于Python Thrift, 但使用方式比Thrift简单, 已被广泛应用。
 
+文档地址：https://happybase.readthedocs.io/en/latest/
+
 ## 安装
 ```bash
 pip install happybase

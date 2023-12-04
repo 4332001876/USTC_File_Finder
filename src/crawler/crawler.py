@@ -1,16 +1,31 @@
 import sys
 sys.path.append('../')
+
 from urllib.parse import urljoin
 from config import Config
 import requests
 from bs4 import BeautifulSoup
-# import pandas as pd
+import pandas as pd
 import time
 import json
+from tqdm import tqdm
 
+'''
+这个函数从web_list.json中逐个爬取网站信息
+如果需要生成csv文件：
+        Crawler().generate_file_csv()
+如果要将爬虫部分集成到后续的数据库部分中，在：
+        Crawler().generate_file_list()
+        这一部分将会返回一个list，list中的每个元素是一个dict，dict中包含了爬取到的信息
 
+如果你想要更新web_list.json，可以使用useless目录下的create_json.ipynb中的add_data函数。一个代码块代表着一个网站数据的添加
 
-class Crawler_2:
+后续工作因为你们还没做，我就先这样拱手掌柜了，要改爬虫逻辑或者有什么可以优化的找fcx
+
+可能在主函数中调用这个爬虫类，需要改一下158行的路径，我在crawler文件夹中改代码可以正确运行，我还不太清楚主函数的实现逻辑，所以也还没改
+'''
+
+class Crawler:
     def __init__(self) -> None:
         pass
 
@@ -67,11 +82,21 @@ class Crawler_2:
             else:
                 return bs_result.find(args, **kargs)[args2]
 
+        # elif method == None:
+        #     return None
         elif method == None:
-            return None
+            if args2 == 'text':
+                return bs_result.text.strip()
+            elif args2 == 'href':
+                return urljoin(url, bs_result[args2])
 
     def fetch_file_list(self, url, encoding, html_locator, info_locator , source_name, file_type = None, file_type_2 = None):
         """Fetch file list from url. Return a list of dict."""
+
+        # 极其特殊的先研院网站翻页机制
+        if url == 'https://iat.ustc.edu.cn/iat/x161/index_1.html':
+            url = 'https://iat.ustc.edu.cn/iat/x161/index.html'
+
         bs_result = self.fetch_file(url, html_locator, encoding)
 
         if bs_result == None:
@@ -96,12 +121,31 @@ class Crawler_2:
                 result[i][info] = self.get_info(bs_result[i], url, method, args, kargs, args2)
 
             
-            if result[i]['time'] != None and result[i]['time'].count('\n') == 1:
+            if result[i]['time'] == None or result[i]['time'] == '': 
+                pass
+
+            elif result[i]['time'].count('\n') == 1:
                 parts = result[i]['time'].split('\n')
                 result[i]['time'] = f'{parts[1]}-{parts[0]}'
 
-            if '发布时间' in result[i]['time']:
+            elif '发布时间' in result[i]['time']:
                 result[i]['time'] = result[i]['time'][5:15]
+
+            elif '[' == result[i]['time'][0]:
+                result[i]['time'] = result[i]['time'][1:-1]
+
+            elif result[i]['time'].count('年') == 1 and result[i]['time'].count('月') == 1 and result[i]['time'].count('日') == 1:
+                result[i]['time'] = result[i]['time'].replace('年', '-').replace('月', '-').replace('日', '')
+
+            # 检测时间末尾是否带有标题，如有，则去除时间中的标题。超算中心网站特性
+            if result[i]['title'] in result[i]['time']:
+                result[i]['time'] = result[i]['time'].replace(result[i]['title'], '').strip()[:-1]
+            
+            # 检测标题末尾是否有[xxxx-xx-xx]的时间信息，如有，在标题中去除，并将对应内容移动到时间处。时间处内容不包括括号(软件学院网站bug)
+            if result[i]['title'][-11:-1].count('-') == 2:
+                result[i]['time'] = result[i]['title'][-11:-1]
+                result[i]['title'] = result[i]['title'][:-13]
+            
 
             result[i]['source'] = source_name
             result[i]['file_type'] = file_type
@@ -111,10 +155,10 @@ class Crawler_2:
     
     def generate_file_list(self):
         file_list = []
-        with open('data.json', 'r') as json_file:
+        with open('web_list.json', 'r') as json_file:
             data_list = json.load(json_file)
 
-        for data in data_list:
+        for data in tqdm(data_list, desc='Processing', unit='item'):
             url = data['url']
             encoding = data['encoding']
             html_locator = data['html_locator']
@@ -136,4 +180,11 @@ class Crawler_2:
                     else:
                         file_list += flip_result
 
+
         return file_list
+    
+    def generate_file_csv(self):
+        file_list = self.generate_file_list()
+        df = pd.DataFrame(file_list)
+        df.to_csv('file_list.csv', index=False)
+        return df

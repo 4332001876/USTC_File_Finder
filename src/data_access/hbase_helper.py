@@ -28,12 +28,11 @@ class HbaseHelper:
     def __init__(self) -> None:
         self.connection = happybase.Connection(Config.HBASE_HOST)
         self.table = self.connection.table(Config.HBASE_TABLE_NAME)
-        self.increment_id = 1
 
     def put_file(self, file_record: FileRecord):
-        row_key = f'row_{self.increment_id}'
+        increment_id = self.table.counter_inc(b'row_increment_id', b'counter:increment_id')
+        row_key = f'row_{increment_id}'
         row_key = row_key.encode()
-        self.increment_id += 1
         self.put(row_key, file_record.get_hbase_data_format())
 
     def put(self, row_key, data):

@@ -6,3 +6,11 @@ class Config:
     
     # path
     TMP_PATH = "tmp"
+    FILE_LIST_PATH = "./crawler/file_list.csv"
+
+
+    # hbase
+    HBASE_HOST = "localhost"
+    HBASE_PORT = 9090
+    HBASE_TABLE_NAME = "ustc_file_finder"
+    # milvus

@@ -1,1 +1,7 @@
 happybase
+pymilvus
+elasticsearch
+
+requests
+bs4
+tqdm

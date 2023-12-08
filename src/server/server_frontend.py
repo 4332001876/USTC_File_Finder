@@ -8,7 +8,7 @@ import pandas as pd
 import os
 
 
-class ServerFrontEnd:
+class ServerFrontend:
     def __init__(self, server_backend:ServerBackend) -> None:
         self.server_backend = server_backend
         self.page = self.build_page()

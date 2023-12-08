@@ -24,6 +24,7 @@ class Config:
     MILVUS_METRIC_TYPE = "COSINE"
     MILVUS_TOP_K = 50
     MILVUS_INDEX_TYPE = "IVF_FLAT"
+    BERT_BASE_CHINESE_PATH = "/home/admin/bert-base-chinese"
 
     # elastic search
     ELASTIC_SEARCH_INDEX_NAME = "ustc_file_finder"

@@ -1,6 +1,6 @@
 happybase
 pymilvus
-elasticsearch
+elasticsearch==7.17.1
 
 requests
 bs4

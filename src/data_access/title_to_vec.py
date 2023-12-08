@@ -7,6 +7,7 @@ from config import Config
 
 class TitleToVec:
     def __init__(self) -> None:
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = BertTokenizer.from_pretrained(
             Config.BERT_BASE_CHINESE_PATH, use_safetensors=True
         )

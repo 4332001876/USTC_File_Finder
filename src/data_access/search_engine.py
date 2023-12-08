@@ -4,7 +4,6 @@ from config import Config
 from data_access.file_record import FileRecord
 from data_access.hbase_helper import HbaseHelper
 from data_access.elastic_search_helper import ElasticsearchHelper
-from data_access.search_engine import SearchEngine
 from data_access.milvus_helper import MilvusHelper
 from data_access.title_to_vec import TitleToVec
 
@@ -15,7 +14,7 @@ hbase字段
 - b'info:time'
 - b'info:source'
 - b'info:file_type'
-- b'info:file_type2'
+- b'info:file_type_2'
 '''
 
 class SearchEngine:
@@ -45,7 +44,7 @@ class SearchEngine:
                 time=data["time"][i],
                 source=data["source"][i],
                 file_type=data["file_type"][i],
-                file_type2=data["file_type2"][i]
+                file_type_2=data["file_type_2"][i]
             )     
             self.insert(file_record)
     

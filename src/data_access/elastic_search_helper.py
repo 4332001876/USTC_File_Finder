@@ -14,7 +14,7 @@ class ElasticsearchHelper:
             "rowkey":rowkey,
             "title":file_record.title
         }
-        self.es.index(index=Config.ELASTIC_SEARCH_INDEX_NAME, doc_type="all_type",body=data)
+        self.es.index(index=Config.ELASTIC_SEARCH_INDEX_NAME,body=data)
 
     def query(self, keyword):
         # query
@@ -25,7 +25,7 @@ class ElasticsearchHelper:
                 }
             }
         }
-        results = self.es.search(index=Config.ELASTIC_SEARCH_INDEX_NAME, doc_type="all_type",body=query)
+        results = self.es.search(index=Config.ELASTIC_SEARCH_INDEX_NAME,body=query)
         rowkeys = [result['_source']["rowkey"] for result in results['hits']['hits']]
         return rowkeys
     
@@ -37,7 +37,7 @@ class ElasticsearchHelper:
                 }
             }
         }
-        results = self.es.search(index=Config.ELASTIC_SEARCH_INDEX_NAME, doc_type="all_type",body=query)
+        results = self.es.search(index=Config.ELASTIC_SEARCH_INDEX_NAME,body=query)
         ids = [result['_id'] for result in results['hits']['hits']]
         return ids
 
@@ -45,7 +45,7 @@ class ElasticsearchHelper:
         ids = self.rowkey_to_id(rowkey)
         for id in ids:
             # delete
-            self.es.delete(index=Config.ELASTIC_SEARCH_INDEX_NAME, doc_type="all_type",id=id)
+            self.es.delete(index=Config.ELASTIC_SEARCH_INDEX_NAME,id=id)
 
     def update(self, rowkey, file_record: FileRecord):
         ids = self.rowkey_to_id(rowkey)
@@ -55,4 +55,4 @@ class ElasticsearchHelper:
                 "rowkey":rowkey,
                 "title":file_record.title
             }
-            self.es.update(index=Config.ELASTIC_SEARCH_INDEX_NAME, doc_type="all_type",id=id,body=data)
+            self.es.update(index=Config.ELASTIC_SEARCH_INDEX_NAME,id=id,body=data)

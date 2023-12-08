@@ -8,9 +8,22 @@ class Config:
     TMP_PATH = "tmp"
     FILE_LIST_PATH = "./crawler/file_list.csv"
 
+    # search engine
+    TOP_K = 100
 
     # hbase
-    HBASE_HOST = "localhost"
+    HBASE_HOST = "0.0.0.0"
     HBASE_PORT = 9090
     HBASE_TABLE_NAME = "ustc_file_finder"
+
     # milvus
+    MILVUS_HOST = "0.0.0.0"
+    MILVUS_PORT = 19530
+    MILVUS_VECTOR_DIMENSION = 768
+    MILVUS_DB_NAME = "ustc_file_finder"
+    MILVUS_METRIC_TYPE = "COSINE"
+    MILVUS_TOP_K = 50
+    MILVUS_INDEX_TYPE = "IVF_FLAT"
+
+    # elastic search
+    ELASTIC_SEARCH_INDEX_NAME = "ustc_file_finder"

@@ -13,6 +13,7 @@ class HbaseHelper:
         row_key = f'row_{increment_id}'
         row_key = row_key.encode()
         self.put(row_key, file_record.get_hbase_data_format())
+        return increment_id, row_key
 
     def get_file(self, row_key):
         row = self.get(row_key)

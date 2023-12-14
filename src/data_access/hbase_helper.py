@@ -5,7 +5,7 @@ from data_access.file_record import FileRecord
 
 class HbaseHelper:
     def __init__(self) -> None:
-        self.connection = happybase.Connection(host=Config.HBASE_HOST,port=Config.HBASE_PORT, autoconnect=True)
+        self.connection = happybase.Connection(host=Config.HBASE_HOST,port=Config.HBASE_PORT, autoconnect=True, timeout=60*1000)
         if Config.HBASE_TABLE_NAME not in [name.decode() for name in self.connection.tables()]:
             self.connection.create_table(
                 Config.HBASE_TABLE_NAME,
@@ -15,6 +15,7 @@ class HbaseHelper:
                 }
             )
         self.table = self.connection.table(Config.HBASE_TABLE_NAME)
+        # self.table_transaction = self.table.batch(transaction=True)
 
     def put_file(self, file_record: FileRecord):
         increment_id = self.table.counter_inc(b'row_increment_id', b'counter:increment_id')
@@ -27,7 +28,7 @@ class HbaseHelper:
         row = self.get(row_key)
         if row:
             return FileRecord(
-                tilte = row[b'info:title'].decode(),
+                title = row[b'info:title'].decode(),
                 url = row[b'info:url'].decode(),
                 time = row[b'info:time'].decode(),
                 source = row[b'info:source'].decode(),

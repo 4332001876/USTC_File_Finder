@@ -50,7 +50,7 @@ class SearchEngine:
     
     def query(self, keyword):
         rowkeys = self.es.query(keyword)
-        if len(rowkeys>Config.TOP_K):
+        if len(rowkeys)>Config.TOP_K:
             rowkeys = rowkeys[:Config.TOP_K]
 
         if self.use_milvus:
@@ -85,7 +85,7 @@ class SearchEngine:
                 rowkeys.append(milvus_rowkeys_not_in_es.pop())
         rowkeys += milvus_rowkeys_not_in_es
 
-        if len(rowkeys>Config.TOP_K):
+        if len(rowkeys)>Config.TOP_K:
             rowkeys = rowkeys[:Config.TOP_K]      
         return rowkeys
 

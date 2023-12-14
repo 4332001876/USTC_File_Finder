@@ -16,28 +16,30 @@ class ServerFrontend:
     def build_page(self):
         
         with gr.Blocks() as page:
-            with gr.Box():
-                with gr.Row():
-                    gr.Markdown("# USTC File Finder")
-                gr.Markdown("use the search engine to find the file you want")   
+            
+            gr.Markdown("# USTC File Finder")
+            gr.Markdown("use the search engine to find the file you want")   
 
-            with gr.Box():
-                input_keyword = gr.Textbox("keyword")
-                image_button = gr.Button("Query",scale=1)
-                
-            with gr.Box():
-                gr.Markdown("## Result")
-                
-                ui_content=[]
-                table_output = gr.DataFrame(type="pandas", label=None)
-                ui_content.append(table_output)
+            input_keyword = gr.Textbox("keyword")
+            image_button = gr.Button("Query",scale=1)
+            
+            gr.Markdown("## Result")
+            
+            # ui_content=[]
+            table_output = gr.DataFrame(
+                headers=["title", "url", "time", "source"],
+                datatype=["str", "str", "str", "str"],
+                row_count=(5, 'dynamic'),
+                col_count=(4, "fixed")
+            )
+            # ui_content.append(table_output)
 
-                image_button.click(fn=self.server_backend.get_query_result_ui, inputs=input_keyword, outputs=ui_content, api_name="greet")
+            image_button.click(fn=self.server_backend.get_query_result_ui, inputs=input_keyword, outputs=table_output, api_name="greet")
 
         return page
 
     def launch(self):
-        self.page.launch()
+        self.page.launch(server_name="0.0.0.0")
 
     
     

@@ -8,7 +8,7 @@ class Tester:
         pass
 
     def test_whole_system(self, init_db = False):
-        search_engine = SearchEngine(init_db=init_db, use_milvus=True)
+        search_engine = SearchEngine(init_db=init_db, use_milvus=False)
         server_backend = ServerBackend(search_engine)
         server_frontend = ServerFrontend(server_backend)
         server_frontend.launch()

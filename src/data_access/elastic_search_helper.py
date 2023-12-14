@@ -6,7 +6,7 @@ from data_access.file_record import FileRecord
 class ElasticsearchHelper:
     def __init__(self) -> None:  
         # connect
-        self.es = Elasticsearch(host="0.0.0.0",port=9200,timeout=60)
+        self.es = Elasticsearch(host="0.0.0.0",port=9200,timeout=60*1000)
 
     def insert(self, rowkey, file_record: FileRecord):
         # insert
@@ -20,7 +20,7 @@ class ElasticsearchHelper:
         # query
         query = {
             "query":{
-                "term":{
+                "match":{
                     "title":keyword
                 }
             }

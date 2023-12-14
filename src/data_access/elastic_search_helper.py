@@ -25,7 +25,7 @@ class ElasticsearchHelper:
                 }
             }
         }
-        results = self.es.search(index=Config.ELASTIC_SEARCH_INDEX_NAME,body=query)
+        results = self.es.search(index=Config.ELASTIC_SEARCH_INDEX_NAME, size=100, body=query)
         rowkeys = [result['_source']["rowkey"] for result in results['hits']['hits']]
         return rowkeys
     

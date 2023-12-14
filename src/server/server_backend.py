@@ -9,9 +9,11 @@ class ServerBackend:
 
     def get_query_result_ui(self, keyword):
         file_records = self.search_engine.query(keyword)
-        df= pd.DataFrame(columns=["title","url","time","source"])
+        df= pd.DataFrame(columns=["title","time","source"])
         for file_record in file_records:
-            df.loc[len(df)] = [file_record.title, file_record.url, file_record.time, file_record.source]
+            link_element_code = "[%s](%s)"%(file_record.title, file_record.url)
+            # link_element_code = "<a href=\"%s\">%s<\\a>"%(file_record.url, file_record.title)
+            df.loc[len(df)] = [link_element_code, file_record.time, file_record.source]
         # print(df.describe())
         # print(df.head())
         ui_content = df

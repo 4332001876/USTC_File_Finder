@@ -10,3 +10,37 @@ docker-compose up -d
 ```
 
 若容器已构建，可直接运行`docker start [OPTIONS] CONTAINER [CONTAINER...]`命令启动milvus服务
+
+## 启动ElasticSearch服务
+同上，启动ElaticSearch的docker容器
+
+## 配置Hbase
+除常规配置外，需要在hbase-site.xml中添加以下配置
+```xml
+<property>
+  <name>hbase.regionserver.thrift.address</name>
+  <value>0.0.0.0</value>
+</property>
+<property>
+  <name>hbase.regionserver.thrift.port</name>
+  <value>9090</value>
+</property>
+<property>
+  <name>hbase.regionserver.thrift.http</name>
+  <value>true</value>
+</property>
+<property>
+  <name>hbase.thrift.server.socket.read.timeout</name>
+  <value>0</value>
+</property>
+```
+
+特别是`hbase.thrift.server.socket.read.timeout`必须设置为0，否则超过一定时间（默认60s）没有对hbase数据库进行操作后会出现`TTransportException(type=4, message='TSocket read 0 bytes')`错误(参考github中的issue:https://github.com/python-happybase/happybase/issues/130)。
+
+## 启动hbase服务
+```bash
+start-all.sh
+start-hbase.sh
+hbase-daemon.sh start thrift -p 9090 --infoport 9091
+```
+

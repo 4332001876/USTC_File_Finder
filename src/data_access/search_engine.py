@@ -4,7 +4,6 @@ from config import Config
 from data_access.file_record import FileRecord
 from data_access.hbase_helper import HbaseHelper
 from data_access.elastic_search_helper import ElasticsearchHelper
-from data_access.search_engine import SearchEngine
 from data_access.milvus_helper import MilvusHelper
 from data_access.title_to_vec import TitleToVec
 
@@ -15,11 +14,11 @@ hbase字段
 - b'info:time'
 - b'info:source'
 - b'info:file_type'
-- b'info:file_type2'
+- b'info:file_type_2'
 '''
 
 class SearchEngine:
-    def __init__(self, init_db = False, use_milvus = True) -> None:
+    def __init__(self, init_db = False, use_milvus = False) -> None:
         self.hbase = HbaseHelper()
         self.es = ElasticsearchHelper()
         self.use_milvus = use_milvus
@@ -45,19 +44,19 @@ class SearchEngine:
                 time=data["time"][i],
                 source=data["source"][i],
                 file_type=data["file_type"][i],
-                file_type2=data["file_type2"][i]
+                file_type_2=data["file_type_2"][i]
             )     
             self.insert(file_record)
     
     def query(self, keyword):
         rowkeys = self.es.query(keyword)
-        if len(rowkeys>Config.TOP_K):
+        if len(rowkeys)>Config.TOP_K:
             rowkeys = rowkeys[:Config.TOP_K]
 
         if self.use_milvus:
             title_embedding = self.title_to_vec.generate_embedding(keyword)
             milvus_rowkeys = self.milvus.search_vector(title_embedding, Config.MILVUS_TOP_K)
-            rowkeys = self.merge_search_result(rowkeys, milvus_rowkeys)
+            rowkeys = self.merge_search_result_simple(rowkeys, milvus_rowkeys)
 
         file_records = []
         for rowkey in rowkeys:
@@ -65,6 +64,16 @@ class SearchEngine:
             file_records.append(file_record)
         return file_records
 
+    def merge_search_result_simple(self, es_rowkeys, milvus_rowkeys):
+        rowkeys = es_rowkeys
+        es_rowkeys_set = set(es_rowkeys)
+        for rowkey in milvus_rowkeys:
+            if rowkey not in es_rowkeys_set:
+                rowkeys.append(rowkey)
+
+        if len(rowkeys)>Config.TOP_K:
+            rowkeys = rowkeys[:Config.TOP_K]      
+        return rowkeys
 
     def merge_search_result(self, es_rowkeys, milvus_rowkeys):
         rowkeys = []
@@ -86,7 +95,7 @@ class SearchEngine:
                 rowkeys.append(milvus_rowkeys_not_in_es.pop())
         rowkeys += milvus_rowkeys_not_in_es
 
-        if len(rowkeys>Config.TOP_K):
+        if len(rowkeys)>Config.TOP_K:
             rowkeys = rowkeys[:Config.TOP_K]      
         return rowkeys
 

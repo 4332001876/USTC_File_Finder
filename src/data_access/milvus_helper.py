@@ -88,8 +88,8 @@ class MilvusHelper:
         self.collection.load()
             
         if isinstance(file_title_embedding, np.ndarray):
-            file_title_embedding = file_title_embedding.astype(np.float32)
-            mr = self.collection.insert([[file_id, file_title_embedding]])
+            file_title_embedding = file_title_embedding.astype(np.float32).reshape(-1)
+            mr = self.collection.insert([[file_id], [file_title_embedding]])
             id = mr.primary_keys[0]
             return id 
         else:

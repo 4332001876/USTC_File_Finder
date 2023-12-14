@@ -7,6 +7,7 @@ from config import Config
 
 class TitleToVec:
     def __init__(self) -> None:
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = BertTokenizer.from_pretrained(
             Config.BERT_BASE_CHINESE_PATH, use_safetensors=True
         )
@@ -30,4 +31,4 @@ class TitleToVec:
 
             # tag_embedding = outputs.last_hidden_state.mean(dim=1).cpu() # 使用最后一层的平均隐藏状态作为标签的向量表示
             file_title_embedding = outputs.pooler_output.cpu()  # 使用pooler_output作为标签的向量表示
-            return file_title_embedding
+            return file_title_embedding.reshape(-1)

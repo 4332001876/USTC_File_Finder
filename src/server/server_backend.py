@@ -12,6 +12,8 @@ class ServerBackend:
         df= pd.DataFrame(columns=["title","url","time","source"])
         for file_record in file_records:
             df.loc[len(df)] = [file_record.title, file_record.url, file_record.time, file_record.source]
-        ui_content = [df]
+        # print(df.describe())
+        # print(df.head())
+        ui_content = df
         return ui_content
 

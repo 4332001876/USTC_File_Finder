@@ -1,11 +1,11 @@
 class FileRecord:
-    def __init__(self, title, url, time, source, file_type, file_type2) -> None:
-        self.title = title
-        self.url = url
-        self.time = time
-        self.source = source
-        self.file_type = file_type
-        self.file_type2 = file_type2
+    def __init__(self, title, url, time, source, file_type, file_type_2) -> None:
+        self.title = str(title)
+        self.url = str(url)
+        self.time = str(time)
+        self.source = str(source)
+        self.file_type = str(file_type)
+        self.file_type_2 = str(file_type_2)
 
     def __str__(self) -> str:
         return f'{self.title},{self.url},{self.time},{self.source},{self.file_type},{self.file_type2}'
@@ -17,5 +17,5 @@ class FileRecord:
             b'info:time': self.time.encode(),
             b'info:source': self.source.encode(),
             b'info:file_type': self.file_type.encode(),
-            b'info:file_type2': self.file_type2.encode()
+            b'info:file_type_2': self.file_type_2.encode()
         }

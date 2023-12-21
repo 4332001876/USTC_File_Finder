@@ -14,7 +14,7 @@ class Config:
     # hbase
     HBASE_HOST = "0.0.0.0"
     HBASE_PORT = 9090
-    HBASE_TABLE_NAME = "ustc_file_finder"
+    HBASE_TABLE_NAME = "ustc_file_finder_v2"
 
     # milvus
     MILVUS_HOST = "0.0.0.0"
@@ -27,8 +27,9 @@ class Config:
     BERT_BASE_CHINESE_PATH = "/home/admin/bert-base-chinese"
 
     # elastic search
-    ELASTIC_SEARCH_INDEX_NAME = "ustc_file_finder"
+    ELASTIC_SEARCH_INDEX_NAME = "ustc_file_finder_v2"
 
     # front-end
     SOURCE_CHOICES = ['教务处', '研究生院', '软件学院', '先进技术研究院', '网络信息中心', '国际合作与交流部', '超算中心', '学工在线', '信息科学技术学院', '出版社', 
         '苏州高等研究院', '资产与后勤保障处', '计算机科学技术学院', '保卫与校园管理处', '信息科学实验中心', '科技成果转移转化办公室', '网络空间安全学院', '大数据学院', '工程科学学院']
+    SOURCE_ALL = "All"

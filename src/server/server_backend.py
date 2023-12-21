@@ -7,8 +7,8 @@ class ServerBackend:
     def __init__(self, search_engine:SearchEngine) -> None:
         self.search_engine = search_engine
 
-    def get_query_result_ui(self, keyword):
-        file_records = self.search_engine.query(keyword)
+    def get_query_result_ui(self, keyword, source=None):
+        file_records = self.search_engine.query(keyword, source)
         df= pd.DataFrame(columns=["title","time","source"])
         for file_record in file_records:
             link_element_code = "[%s](%s)"%(file_record.title, file_record.url)

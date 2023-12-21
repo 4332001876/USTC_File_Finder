@@ -48,8 +48,8 @@ class SearchEngine:
             )     
             self.insert(file_record)
     
-    def query(self, keyword):
-        rowkeys = self.es.query(keyword)
+    def query(self, keyword, source=None):
+        rowkeys = self.es.query(keyword, source)
         if len(rowkeys)>Config.TOP_K:
             rowkeys = rowkeys[:Config.TOP_K]
 
@@ -61,6 +61,9 @@ class SearchEngine:
         file_records = []
         for rowkey in rowkeys:
             file_record = self.hbase.get_file(rowkey)
+            if (source is not None) and source != Config.SOURCE_ALL:
+                if file_record.source != source:
+                    continue
             file_records.append(file_record)
         return file_records
 

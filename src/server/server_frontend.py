@@ -22,16 +22,15 @@ class ServerFrontend:
 
             with gr.Row() as row:
                 input_keyword = gr.Textbox("", label="Keyword", placeholder="Input the keyword here")
-                gr.Markdown("## Source")
                 input_source = gr.Dropdown(
-                    choices=["All"]+Config.SOURCE_LIST,
+                    choices=[Config.SOURCE_ALL]+Config.SOURCE_CHOICES,
                     label="Source",
-                    default="All"
+                    value=Config.SOURCE_ALL
                 )
             
             image_button = gr.Button("Query",scale=1)
             
-            gr.Markdown("## Result")
+            gr.Markdown("## 📂 Result")
             gr.Markdown("Click on the title to access the file.")   
             
             # ui_content=[]
@@ -43,7 +42,7 @@ class ServerFrontend:
             )
             # ui_content.append(table_output)
 
-            image_button.click(fn=self.server_backend.get_query_result_ui, inputs=input_keyword, outputs=table_output, api_name="greet")
+            image_button.click(fn=self.server_backend.get_query_result_ui, inputs=[input_keyword, input_source], outputs=table_output, api_name="greet")
 
         return page
 

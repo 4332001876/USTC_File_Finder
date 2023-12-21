@@ -30,11 +30,15 @@ class ElasticsearchHelper:
         else:
             query = {
                 "query":{
-                    "match":{
-                        "title":keyword,
-                    },
-                    "match_all":{
-                        "source":source
+                    "bool":{
+                        "must":[
+                            {"match":{
+                                "title":keyword,
+                            }},
+                            {"term":{
+                                "source.keyword":source
+                            }}
+                        ]
                     }
                 }
             }

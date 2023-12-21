@@ -1,0 +1,28 @@
+# 启动 docker-compose up -d && docker-compose logs -f
+# 关闭 docker-compose down &&  docker-compose rm -vf
+version: '3.2'
+services:
+  elasticsearch:
+    image: elasticsearch:7.17.1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    container_name: "elasticsearch"
+    environment:
+      # 单节点     
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - /home/admin/env/docker/elastic_search/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - /home/admin/env/docker/elastic_search/data:/usr/share/elasticsearch/data
+      - /home/admin/env/docker/elastic_search/plugins:/usr/share/elasticsearch/plugins
+  kibana:
+    image: kibana:7.17.1
+    ports:
+      - "5601:5601"
+    container_name: "kibana"
+    #restart: always
+    depends_on:
+      - elasticsearch
+    volumes:
+      - /home/admin/env/docker/elastic_search/config/kibana.yml:/usr/share/kibana/config/kibana.yml

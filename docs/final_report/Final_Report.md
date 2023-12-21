@@ -42,59 +42,59 @@ crawler文件夹下的文件结构为:
 &emsp;&emsp;以下是一项网站数据的内容示例。在这个数据库中，一共存储着91个这样的数据，以便于实现对网站文件内容的实时读取与刷新。
 ```json
 {
-        "url": "https://finance.ustc.edu.cn/xzzx/list{page_num}.psp",
-         # 网站网址
-        "encoding": null,
-         # 有的网站需要指定'utf-8'编码方式
-        "title": "财务处",
-         # 该网站名称
-        "dtype": null,
-         # 有的网站有多个子文件列表，在此处存储一级文件列表名称
-        "dtype2": null,
-         # 有的网站有多个子文件列表，在此处存储二级文件列表名称
-        "flip": true,
-         # 标识该网站是否可翻页，可翻页的网站均在url中标识了翻页逻辑
-        "html_locator": [
-            # 用于定位文件列表，包含着若干个字典，每个字典对应一次定位操作
-            {
-                "method": "find",   # 定位所用方法
-                "args": "ul",       # 定位对象
-                "kwargs": {         # 可选的辅助定位参数
-                    "class_": "news_list list2"
+    "url": "https://finance.ustc.edu.cn/xzzx/list{page_num}.psp",
+    # 网站网址
+    "encoding": null,
+    # 有的网站需要指定'utf-8'编码方式
+    "title": "财务处",
+    # 该网站名称
+    "dtype": null,
+    # 有的网站有多个子文件列表，在此处存储一级文件列表名称
+    "dtype2": null,
+    # 有的网站有多个子文件列表，在此处存储二级文件列表名称
+    "flip": true,
+    # 标识该网站是否可翻页，可翻页的网站均在url中标识了翻页逻辑
+    "html_locator": [
+        # 用于定位文件列表，包含着若干个字典，每个字典对应一次定位操作
+        {
+            "method": "find",   # 定位所用方法
+            "args": "ul",       # 定位对象
+            "kwargs": {         # 可选的辅助定位参数
+                "class_": "news_list list2"
+            }
+        },
+        {
+            "method": "find_all",
+            "args": "li"
+        }
+    ],
+    "info_locator": [
+        # 得到文件列表后，对文件中的每一项对应的名称、url、时间进行定位。每个字典对应对一个对象进行定位
+        {
+            "info": "title",    # 定位对象
+            "method": "find",   # 定位方法
+            "args": "a",        # 定位对象的类型。可为字符串（不需要额外辅助定位参数），也可为字典（需要额外辅助定位参数）
+            "args2": "text"     # 提取出对象的形式
+        },
+        {
+            "info": "url",
+            "method": "find",
+            "args": "a",
+            "args2": "href"
+        },
+        {
+            "info": "time",
+            "method": "find",
+            "args": [
+                "span",
+                {
+                    "class_": "news_meta"
                 }
-            },
-            {
-                "method": "find_all",
-                "args": "li"
-            }
-        ],
-        "info_locator": [
-            # 得到文件列表后，对文件中的每一项对应的名称、url、时间进行定位。每个字典对应对一个对象进行定位
-            {
-                "info": "title",    # 定位对象
-                "method": "find",   # 定位方法
-                "args": "a",        # 定位对象的类型。可为字符串（不需要额外辅助定位参数），也可为字典（需要额外辅助定位参数）
-                "args2": "text"     # 提取出对象的形式
-            },
-            {
-                "info": "url",
-                "method": "find",
-                "args": "a",
-                "args2": "href"
-            },
-            {
-                "info": "time",
-                "method": "find",
-                "args": [
-                    "span",
-                    {
-                        "class_": "news_meta"
-                    }
-                ],
-                "args2": "text"
-            }
-        ]
-    },
+            ],
+            "args2": "text"
+        }
+    ]
+}
 ```
 
 
@@ -109,9 +109,9 @@ crawler文件夹下的文件结构为:
 
 <kbd>file_list.csv</kbd>：
 &emsp;&emsp;存储着爬取得到的文件信息。以下为内容示例：
-|   title   |   url   |    time   |   source   |   file_type   |   file_type_2   |
-| :-------: | :-----: | :-------: | :--------: | :---------: | :-----: |
-|研究生教学研究项目立项申请书|http://gradschool.ustc.edu.cn/static/upload/article/picture/786794f67b044809935173f9cbc44110.doc|2020-03-10|研究生院|培养工作|教学研究|
+|            title             |                                               url                                                |    time    |  source  | file_type | file_type_2 |
+| :--------------------------: | :----------------------------------------------------------------------------------------------: | :--------: | :------: | :-------: | :---------: |
+| 研究生教学研究项目立项申请书 | http://gradschool.ustc.edu.cn/static/upload/article/picture/786794f67b044809935173f9cbc44110.doc | 2020-03-10 | 研究生院 | 培养工作  |  教学研究   |
 
 
 各个网站爬取的文件数量如下：
@@ -165,7 +165,7 @@ crawler文件夹下的文件结构为:
 |  file_type  | 文件在网站中的一级类型 |
 | file_type_2 | 文件在网站中的二级类型 |
 
-在列`counter:increment_id`的`row_increment_id`行中我们存储了一个自增计数器，用于将row_key命名为`f'row_{increment_id}'`，这将保证各文件的row_key不同，同时这些row_key将用来关联HBase数据库与其它查询数据库。
+在列`counter:increment_id`的`row_increment_id`行中我们存储了一个HBase的自增计数器，用于将row_key命名为`f'row_{increment_id}'`，这将保证各文件的row_key不同，同时这些row_key将用来关联HBase数据库与其它查询数据库。
 
 
 
@@ -173,7 +173,7 @@ crawler文件夹下的文件结构为:
 由于HBase对搜索功能几乎没有支持，因此我们使用ElasticSearch来对文件的标题、来源等信息进行检索。Elasticsearch是一个分布式、RESTful风格的搜索和数据分析引擎，支持分词查询、模糊查询、查询结果排序，非常适用于当前文本查询的场景。由于其原生支持分布式部署，因此可以保证我们项目的可扩展性。
 我们使用Python的ElasticSearch库来实现我们的项目与ElasticSearch搜索引擎之间的交互。
 
-我们实现了`ElasticsearchHelper`类，用来管理ElasticSearch的增删改查操作。
+我们实现了`ElasticsearchHelper`类，用来管理ElasticSearch的连接及增删改查操作。
 
 搜索结果以row_key的形式与原HBase数据库关联。
 
@@ -187,7 +187,7 @@ Milvus 是一个云原生的向量数据库，具有以下特点：
 
 由于其原生支持分布式部署，因此可以保证我们项目的可扩展性。
 
-我们实现了`TitleToVec`类，对每一个标题用BERT处理，并以BERT的`pooler output`（`[cls]` token对应位置的输出token，包含了整个句子的语义信息）作为标题的sentence embedding。我们就以该标题的embedding作为Milvus向量查询数据库的索引，并以查询关键词的embedding作为查询向量，来对标题进行向量查询。
+我们实现了`TitleToVec`类，使用Hugging Face上最热门的中文BERT模型`bert-base-chinese`预训练模型对文件标题及查询关键词生成embedding。对每一个标题用BERT处理，并以BERT的`pooler output`（`[cls]` token对应位置的输出token，包含了整个句子的语义信息）作为标题的sentence embedding。我们以该标题的embedding作为Milvus向量查询数据库的索引。查询时，同样用BERT生成查询关键词的embedding，作为查询向量，来对文件标题进行向量查询。
 
 搜索结果以row_key的形式与原HBase数据库关联。
 

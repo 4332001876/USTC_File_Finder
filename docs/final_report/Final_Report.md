@@ -3,7 +3,7 @@
 ## 组员名单及具体分工
 
 - PB21030838 罗浩铭:负责整体框架的搭建，以及检索部分（包括传统查询数据库elastic search, 向量查询数据库milvus的搭建与交互），并完成了项目在云服务器上的部署，以及上台答辩
-- PB21061199 范晨晓:负责爬虫部分（包括设置对不同网页的遍历方式控制），以及对网页数据的解析与存储
+- PB21061199 范晨晓:负责爬虫部分（包括设置对不同网页的遍历方式控制），以及对网页数据的解析与存储，参与了与hbase数据库交互的工作
 - PB21151807 刘海琳:负责hbase数据库的搭建与交互部分，前端搭建，以及答辩PPT制作
 
 
@@ -31,6 +31,87 @@ USTC_File_Finder
 其中`crawler`包含了爬虫部分的代码，`data_access`包含了HBase数据库访问及ElasticSearch与Milvus查询的代码，`server`包含了前端及其所需后端逻辑的代码，`config.py`包含了整个项目的配置信息，`main.py`是项目的入口，`test.py`包含了测试代码，定义了一个`Tester.py`类，用于测试各个模块的功能。
 
 ### 爬虫
+crawler文件夹下的文件结构为:
+- crawler.py：爬虫功能函数，实现对网站结构数据web_list.json的读取，自动遍历所有网站的所有可见页码，将结果输出在csv文件中
+- web_list.json：存储着所有网站的url、编码方式、翻页策略、名称以及结构信息，以便爬虫函数调用
+- file_list.csv：爬虫函数完成读取后，输出的文件列表。包含文件url、名称、发布时间以及来源
+- web_list.txt：前期调研时收集的网站数据，用于逐个分析网站html结构，人力构建web_list.json。共收集了91个网站的数据
+
+<kbd>web_list.json</kbd>结构：
+&emsp;&emsp;这个数据库中存储着所有网站的结构信息，这样，只需要通过一个统一的爬虫函数，就可以实现对不同的网站进行爬取。
+&emsp;&emsp;以下是一项网站数据的内容示例。在这个数据库中，一共存储着91个这样的数据，以便于实现对网站文件内容的实时读取与刷新。
+```json
+{
+        "url": "https://finance.ustc.edu.cn/xzzx/list{page_num}.psp",
+         # 网站网址
+        "encoding": null,
+         # 有的网站需要指定'utf-8'编码方式
+        "title": "财务处",
+         # 该网站名称
+        "dtype": null,
+         # 有的网站有多个子文件列表，在此处存储一级文件列表名称
+        "dtype2": null,
+         # 有的网站有多个子文件列表，在此处存储二级文件列表名称
+        "flip": true,
+         # 标识该网站是否可翻页，可翻页的网站均在url中标识了翻页逻辑
+        "html_locator": [
+            # 用于定位文件列表，包含着若干个字典，每个字典对应一次定位操作
+            {
+                "method": "find",   # 定位所用方法
+                "args": "ul",       # 定位对象
+                "kwargs": {         # 可选的辅助定位参数
+                    "class_": "news_list list2"
+                }
+            },
+            {
+                "method": "find_all",
+                "args": "li"
+            }
+        ],
+        "info_locator": [
+            # 得到文件列表后，对文件中的每一项对应的名称、url、时间进行定位。每个字典对应对一个对象进行定位
+            {
+                "info": "title",    # 定位对象
+                "method": "find",   # 定位方法
+                "args": "a",        # 定位对象的类型。可为字符串（不需要额外辅助定位参数），也可为字典（需要额外辅助定位参数）
+                "args2": "text"     # 提取出对象的形式
+            },
+            {
+                "info": "url",
+                "method": "find",
+                "args": "a",
+                "args2": "href"
+            },
+            {
+                "info": "time",
+                "method": "find",
+                "args": [
+                    "span",
+                    {
+                        "class_": "news_meta"
+                    }
+                ],
+                "args2": "text"
+            }
+        ]
+    },
+```
+
+
+<kbd>crawler.py</kbd>函数：
+&emsp;&emsp;在爬虫函数中，定义了一个爬虫类。类中有以下功能函数：
+- <kbd>fetch_data</kbd>：通过指定的url和编码方式，读取网站html结构的文本信息
+- <kbd>fetch_file</kbd>：从web_list.json获取出网站的结构信息，利用结构信息定位到文件所在的列表
+- <kbd>get_info</kbd>：实现根据web_list.json中存储的内容对应结构信息，返回对应内容的文本
+- <kbd>fetch_file_list</kbd>：调用fetch_file得到文件列表后，对列表中的项逐个遍历，利用web_list.json文件中所存储的各项内容的结构信息，读取出每个文件的url、时间、标题等内容，并对数据格式进行一定处理
+- <kbd>generate_file_list</kbd>：对web_list.json中的每一项（每一项对应一个网站）进行读取，并对可以翻页的网站进行翻页遍历直至无法获取内容为止。调用fetch_file_list得到文件列表并返回
+- <kbd>generate_file_csv</kbd>：将generate_file_list返回的文件列表写入csv文件中，以便下游数据库的接入
+
+<kbd>file_list.csv</kbd>：
+&emsp;&emsp;存储着爬取得到的文件信息。以下为内容示例：
+|   title   |   url   |    time   |   source   |   file_type   |   file_type_2   |
+| :-------: | :-----: | :-------: | :--------: | :---------: | :-----: |
+|研究生教学研究项目立项申请书|http://gradschool.ustc.edu.cn/static/upload/article/picture/786794f67b044809935173f9cbc44110.doc|2020-03-10|研究生院|培养工作|教学研究|
 
 
 各个网站爬取的文件数量如下：
@@ -55,6 +136,13 @@ USTC_File_Finder
 |    网络空间安全学院    |   14   |
 |       大数据学院       |   7    |
 |      工程科学学院      |   7    |
+
+我们在爬虫部分的技术路线亮点有：
+- 通过json数据库存储所有网站的结构信息，数据可维护性好
+- 使用统一的爬虫函数，代码整洁
+- 可以实现自动遍历数据库中的所有网站，对文件信息进行更新
+- 实现了自动翻页，一方面提升了文件内容、另一方面也使得网站结构数据库精简可阅读性好
+- 解决了一些网站显示的bug，例如软件学院的网站文件时间有误（可能是发生过数据迁移导致的）。我们重新读取修正了时间数据
 
 
 

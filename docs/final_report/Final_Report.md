@@ -60,18 +60,59 @@ USTC_File_Finder
 
 
 ### hbase数据库
-我们
+我们基于Python的happybase库，并借助HBase的Thrift服务，来实现我们的项目与HBase数据库之间的交互。
+
+我们实现了一个`HbaseHelper`类，用来管理与HBase数据库之间的连接与增删改查操作。我们还实现了以我们项目定义的`FileRecord`文件信息类为API的数据库交互函数，包括将`FileRecord`对象存入HBase数据库或覆盖HBase数据库中原有条目的`put_file`函数，以及将HBase数据库中读出数据转换为`FileRecord`对象的`get_file`函数。
+
+数据库内存储的内容结构如下：
+
+在列族`info`中我们存储了如下文件信息：
+
+|    列名     |          信息          |
+| :---------: | :--------------------: |
+|    title    |        文件标题        |
+|     url     |        文件URL         |
+|    time     |      文件发布时间      |
+|   source    |        文件来源        |
+|  file_type  | 文件在网站中的一级类型 |
+| file_type_2 | 文件在网站中的二级类型 |
+
+在列`counter:increment_id`的`row_increment_id`行中我们存储了一个自增计数器，用于将row_key命名为`f'row_{increment_id}'`，这将保证各文件的row_key不同，同时这些row_key将用来关联HBase数据库与其它查询数据库。
 
 
 
 ### elastic search
+由于HBase对搜索功能几乎没有支持，因此我们使用ElasticSearch来对文件的标题、来源等信息进行检索。Elasticsearch是一个分布式、RESTful风格的搜索和数据分析引擎，支持分词查询、模糊查询、查询结果排序，非常适用于当前文本查询的场景。由于其原生支持分布式部署，因此可以保证我们项目的可扩展性。
+我们使用Python的ElasticSearch库来实现我们的项目与ElasticSearch搜索引擎之间的交互。
 
+我们实现了`ElasticsearchHelper`类，用来管理ElasticSearch的增删改查操作。
 
+搜索结果以row_key的形式与原HBase数据库关联。
 
 
 ### milvus数据库
-BERT的`pooler output`
+在尝试传统查询框架的同时，我们也尝试了向量查询框架。我们使用Milvus向量查询数据库来对文件标题的embedding进行向量查询以扩展搜索结果。
+Milvus 是一个云原生的向量数据库，具有以下特点：
+高性能：性能高超，完成万亿条向量数据搜索的平均延迟以毫秒计
+高可用、高可靠、高可扩展性：支持分布式部署，具有高容错容灾能力
+功能强大：增量数据摄取、标量向量混合查询、time travel 等
 
+由于其原生支持分布式部署，因此可以保证我们项目的可扩展性。
+
+我们实现了`TitleToVec`类，对每一个标题用BERT处理，并以BERT的`pooler output`（`[cls]` token对应位置的输出token，包含了整个句子的语义信息）作为标题的sentence embedding。我们就以该标题的embedding作为Milvus向量查询数据库的索引，并以查询关键词的embedding作为查询向量，来对标题进行向量查询。
+
+搜索结果以row_key的形式与原HBase数据库关联。
+
+
+### 搜索引擎管理
+我们实现了一个`SearchEngine`类，用来ElasticSearch与Milvus向量数据库的查询，整合多来源的查询结果，并以查询得到的条目的row_key从HBase数据库中读出数据。
+
+### 前端
+我们使用了gradio框架搭建了一个简单的前端，用于接收用户的查询请求，并美观地展示查询结果。
+
+
+网站已经在云服务器上部署，其网址为：http://47.76.73.185:7860/
+欢迎大家访问和体验！
 
 ## 实现功能介绍
 
@@ -84,9 +125,9 @@ BERT的`pooler output`
 
 ## 组员总结与心得
 ### 罗浩铭
+我实现了
 
-
-
+在这次实验中，我磨练了我使用各大数据框架的技术，提高了我对大数据系统特别是搜索引擎等技术的理解。相信在数据处理需求日益
 
 ### 范晨晓
 

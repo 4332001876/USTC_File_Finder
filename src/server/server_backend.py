@@ -14,6 +14,16 @@ class ServerBackend:
             link_element_code = "[%s](%s)"%(file_record.title, file_record.url)
             # link_element_code = "<a href=\"%s\">%s<\\a>"%(file_record.url, file_record.title)
             df.loc[len(df)] = [link_element_code, file_record.time, file_record.source]
+
+        # Function to apply text color
+        def highlight_cols(x): 
+            df = x.copy() 
+            df.loc[:, :] = 'color: black'
+            df["title"] = 'color: #2440b3; font-weight: 500;'
+            return df 
+        # Applying the style function
+        df = df.style.apply(highlight_cols, axis = None)
+
         # print(df.describe())
         # print(df.head())
         ui_content = df

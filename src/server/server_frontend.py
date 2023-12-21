@@ -17,8 +17,8 @@ class ServerFrontend:
         
         with gr.Blocks() as page:
             
-            gr.Markdown("# USTC File Finder")
-            gr.Markdown("use the search engine to find the file you want")   
+            gr.Markdown("# 📄 USTC File Finder")
+            gr.Markdown("Use the search engine to find the files you want.")   
 
             input_keyword = gr.Textbox("keyword")
             image_button = gr.Button("Query",scale=1)

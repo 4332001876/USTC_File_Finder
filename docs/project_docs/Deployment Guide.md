@@ -44,3 +44,8 @@ start-hbase.sh
 hbase-daemon.sh start thrift -p 9090 --infoport 9091
 ```
 
+## 运行项目
+```bash
+cd <project_path>/src
+nohup python3 main.py >/dev/null 2>&1 &
+```

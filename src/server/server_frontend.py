@@ -24,13 +24,14 @@ class ServerFrontend:
             image_button = gr.Button("Query",scale=1)
             
             gr.Markdown("## Result")
+            gr.Markdown("Click on the title to access the file.")   
             
             # ui_content=[]
             table_output = gr.DataFrame(
-                headers=["title", "url", "time", "source"],
-                datatype=["str", "str", "str", "str"],
+                headers=["title", "time", "source"],
+                datatype=["markdown", "str", "str"],
                 row_count=(5, 'dynamic'),
-                col_count=(4, "fixed")
+                col_count=(3, "fixed")
             )
             # ui_content.append(table_output)
 

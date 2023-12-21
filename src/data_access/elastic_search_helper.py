@@ -12,19 +12,32 @@ class ElasticsearchHelper:
         # insert
         data = {
             "rowkey":rowkey,
-            "title":file_record.title
+            "title":file_record.title,
+            "source":file_record.source,
         }
         self.es.index(index=Config.ELASTIC_SEARCH_INDEX_NAME,body=data)
 
-    def query(self, keyword):
+    def query(self, keyword, source=None):
         # query
-        query = {
-            "query":{
-                "match":{
-                    "title":keyword
+        if source is None or source == "All":
+            query = {
+                "query":{
+                    "match":{
+                        "title":keyword
+                    }
                 }
             }
-        }
+        else:
+            query = {
+                "query":{
+                    "match":{
+                        "title":keyword,
+                    },
+                    "match_all":{
+                        "source":source
+                    }
+                }
+            }
         results = self.es.search(index=Config.ELASTIC_SEARCH_INDEX_NAME, size=100, body=query)
         rowkeys = [result['_source']["rowkey"] for result in results['hits']['hits']]
         return rowkeys
@@ -53,6 +66,7 @@ class ElasticsearchHelper:
             # update
             data = {
                 "rowkey":rowkey,
-                "title":file_record.title
+                "title":file_record.title,
+                "source":file_record.source,
             }
             self.es.update(index=Config.ELASTIC_SEARCH_INDEX_NAME,id=id,body=data)

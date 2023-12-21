@@ -20,7 +20,15 @@ class ServerFrontend:
             gr.Markdown("# 📄 USTC File Finder")
             gr.Markdown("Use the search engine to find the files you want.")   
 
-            input_keyword = gr.Textbox("keyword")
+            with gr.Row() as row:
+                input_keyword = gr.Textbox("", label="Keyword", placeholder="Input the keyword here")
+                gr.Markdown("## Source")
+                input_source = gr.Dropdown(
+                    choices=["All"]+Config.SOURCE_LIST,
+                    label="Source",
+                    default="All"
+                )
+            
             image_button = gr.Button("Query",scale=1)
             
             gr.Markdown("## Result")

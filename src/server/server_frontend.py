@@ -15,7 +15,7 @@ class ServerFrontend:
 
     def build_page(self):
         
-        with gr.Blocks() as page:
+        with gr.Blocks(title="USTC File Finder") as page:
             
             gr.Markdown("# 📄 USTC File Finder")
             gr.Markdown("Use the search engine to find the files you want.")   

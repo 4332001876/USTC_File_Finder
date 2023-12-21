@@ -37,7 +37,7 @@ class ServerFrontend:
             table_output = gr.DataFrame(
                 headers=["title", "time", "source"],
                 datatype=["markdown", "str", "str"],
-                row_count=(5, 'dynamic'),
+                row_count=(1, 'dynamic'),
                 col_count=(3, "fixed")
             )
             # ui_content.append(table_output)

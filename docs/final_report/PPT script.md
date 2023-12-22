@@ -139,7 +139,7 @@ Milvus 是一个云原生的向量数据库，具有以下特点：
 - 使用Python的pymilvus库来实现我们的项目与Milvus数据库之间的交互，通过实现`MilvusHelper`类，来管理Milvus数据库的连接及增删改查操作。
 - 使用Hugging Face上最热门的中文BERT模型`bert-base-chinese`预训练模型对文件标题及查询关键词生成embedding，并对数据库建立向量索引。
 
-<img src="./pic/final_website_search_化学院.png" width="100%" style="margin: 0 auto;">
+<img src="./pic/bert_pooler_output.png" width="100%" style="margin: 0 auto;">
 
 
 #### 效果展示

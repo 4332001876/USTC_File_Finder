@@ -19,6 +19,7 @@
 ```txt
 USTC_File_Finder
 ├── docs # 文档
+├── env # elastic search与milvus的docker-compose文件
 ├── src # 源代码
 │   ├── crawler # 爬虫
 │   ├── data_access # 数据库访问接口
@@ -32,7 +33,7 @@ USTC_File_Finder
 
 ### 爬虫
 crawler文件夹下的文件结构为:
-- crawler.py：爬虫功能函数，实现对网站结构数据web_list.json的读取，自动遍历所有网站的所有可见页码，将结果输出在csv文件中
+- crawler.py：爬虫类，实现对网站结构数据web_list.json的读取，自动遍历所有网站的所有可见页码，将结果输出在csv文件中
 - web_list.json：存储着所有网站的url、编码方式、翻页策略、名称以及结构信息，以便爬虫函数调用
 - file_list.csv：爬虫函数完成读取后，输出的文件列表。包含文件url、名称、发布时间以及来源
 - web_list.txt：前期调研时收集的网站数据，用于逐个分析网站html结构，人力构建web_list.json。共收集了91个网站的数据
@@ -96,7 +97,10 @@ crawler文件夹下的文件结构为:
     ]
 }
 ```
-
+其主要分为三部分：
+- 网站基本信息：主要包括网站url范式、编码方式、是否可翻页，主要用于提供网页元信息及控制翻页逻辑
+- html_locator：用于定位文件列表，包含着若干个字典，每个字典对应一次定位操作
+- info_locator：得到文件列表后，对文件中的每一项对应的名称、url、时间进行定位。每个字典对应对一个对象进行定位
 
 #### crawler.py函数：
 &emsp;&emsp;在爬虫函数中，定义了一个爬虫类。类中有以下功能函数：
@@ -163,8 +167,7 @@ crawler文件夹下的文件结构为:
 我们实现了一个`HbaseHelper`类，用来管理与HBase数据库之间的连接与增删改查操作。我们还实现了以我们项目定义的`FileRecord`文件信息类为API的数据库交互函数，包括将`FileRecord`对象存入HBase数据库或覆盖HBase数据库中原有条目的`put_file`函数，以及将HBase数据库中读出数据转换为`FileRecord`对象的`get_file`函数。
 
 数据库内存储的内容结构如下：
-
-在列族`info`中我们存储了如下文件信息：
+- 在列族`info`中我们存储了如下文件信息：
 
 |    列名     |          信息          |
 | :---------: | :--------------------: |
@@ -175,17 +178,81 @@ crawler文件夹下的文件结构为:
 |  file_type  | 文件在网站中的一级类型 |
 | file_type_2 | 文件在网站中的二级类型 |
 
-在列`counter:increment_id`的`row_increment_id`行中我们存储了一个HBase的自增计数器，用于将row_key命名为`f'row_{increment_id}'`，这将保证各文件的row_key不同，同时这些row_key将用来关联HBase数据库与其它查询数据库。
+- 在列`counter:increment_id`的`row_increment_id`行中我们存储了一个HBase的自增计数器，用于将row_key命名为`f'row_{increment_id}'`，这将保证各文件的row_key不同，同时这些row_key将用来关联HBase数据库与其它查询数据库。
 
+除了常规配置外，我们还需要为Thrift服务在`hbase-site.xml`内进行专门配置：
 
+```xml
+<property>
+  <name>hbase.regionserver.thrift.address</name>
+  <value>0.0.0.0</value>
+</property>
+<property>
+  <name>hbase.regionserver.thrift.port</name>
+  <value>9090</value>
+</property>
+<property>
+  <name>hbase.regionserver.thrift.http</name>
+  <value>true</value>
+</property>
+<property>
+  <name>hbase.thrift.server.socket.read.timeout</name>
+  <value>0</value>
+</property>
+```
+
+特别是`hbase.thrift.server.socket.read.timeout`必须设置为0，否则超过一定时间（默认60s）没有对hbase数据库进行操作后，HBase的Thrift服务会自动断开连接，从而Python端会出现`TTransportException(type=4, message='TSocket read 0 bytes')`错误(参考github中的issue:https://github.com/python-happybase/happybase/issues/130)。
 
 ### elastic search
 由于HBase对搜索功能几乎没有支持，因此我们使用ElasticSearch来对文件的标题、来源等信息进行检索。Elasticsearch是一个分布式、RESTful风格的搜索和数据分析引擎，支持分词查询、模糊查询、查询结果排序，非常适用于当前文本查询的场景。由于其原生支持分布式部署，因此可以保证我们项目的可扩展性。
 我们使用Python的ElasticSearch库来实现我们的项目与ElasticSearch搜索引擎之间的交互。
 
+我们使用了docker来部署Milvus，`docker-compose.yml`文件见env文件夹。
+
 我们实现了`ElasticsearchHelper`类，用来管理ElasticSearch的连接及增删改查操作。
 
-搜索结果以row_key的形式与原HBase数据库关联。
+ElasticSearch的索引中，存储了各文件的标题、来源网站与rowkey.
+
+查询逻辑中，当未指定文件来源网站时(即`source`参数为`All`)，我们使用ElasticSearch的`match`查询对所有网站的文件进行检索，该查询方法为分词匹配、模糊匹配，且会对每个搜索结果进行打分排序，因此体验效果极佳，与主流搜索引擎类似。其查询语句如下（`Python`字典形式）：
+```python
+query = {
+    "query":{
+        "match":{
+            "title":keyword
+        }
+    }
+}
+```
+当指定文件来源网站时，我们使用ElasticSearch的`bool`查询，对文件标题进行分词匹配，同时用`term`查询方式对文件来源网站(`source.keyword`)进行精确匹配。其查询语句如下（`Python`字典形式）：
+```python
+query = {
+    "query":{
+        "bool":{
+            "must":[
+                {"match":{
+                    "title":keyword,
+                }},
+                {"term":{
+                    "source.keyword":source
+                }}
+            ]
+        }
+    }
+}
+```
+
+搜索结果返回文件的row_key，以row_key的形式与原HBase数据库关联。
+
+
+#### 查询结果展示
+- 支持分词：20在结果内，而2023不在结果内
+<img src="./pic/final_website_search_20.png" width="100%" style="margin: 0 auto;">
+
+- 支持模糊查询：即使有标点符号干扰，目标查询结果就在第一个
+<img src="./pic/final_website_search_贷价.png" width="100%" style="margin: 0 auto;">
+
+- 支持检索结果排序：更好的匹配方案在前，不好的匹配方案在后
+<img src="./pic/final_website_search_化学院.png" width="100%" style="margin: 0 auto;">
 
 
 ### milvus数据库
@@ -198,6 +265,10 @@ Milvus 是一个云原生的向量数据库，具有以下特点：
 由于其原生支持分布式部署，因此可以保证我们项目的可扩展性。
 
 我们实现了`TitleToVec`类，使用Hugging Face上最热门的中文BERT模型`bert-base-chinese`预训练模型对文件标题及查询关键词生成embedding。对每一个标题用BERT处理，并以BERT的`pooler output`（`[cls]` token对应位置的输出token，包含了整个句子的语义信息）作为标题的sentence embedding。我们以该标题的embedding作为Milvus向量查询数据库的索引。查询时，同样用BERT生成查询关键词的embedding，作为查询向量，来对文件标题进行向量查询。
+
+我们使用了docker来部署Milvus，`docker-compose.yml`文件见env文件夹。
+
+我们使用了Python的pymilvus库来实现我们的项目与Milvus数据库之间的交互，通过实现`MilvusHelper`类，来管理Milvus数据库的连接及增删改查操作。
 
 搜索结果以row_key的形式与原HBase数据库关联。
 
@@ -235,6 +306,6 @@ Milvus 是一个云原生的向量数据库，具有以下特点：
 - 同时，在团队分工的过程中，很庆幸能遇到一群相互协作共同进步的队友。我们在不断协调沟通的过程中，也是收获颇丰
 
 ### 刘海琳
- 在本次实验中我主要负责hbase数据库的搭建与交互任务，以及前端搭建的任务。在实验过程中，我了解了如何使用happybase 库提供的接口，并将它们与 HBase 的服务相结合。其次，我还学习到了如何在 Python 中定义对象并将其与 HBase 数据库中的条目进行关联。本次实验让我更加熟悉了 Python 中与数据库交互的操作方法，也提升了我在数据管理方面的能力。同时，了解 happybase 库的使用，极大地提升了我利用现有工具来简化数据管理任务的能力。
+ 在本次实验中我主要负责hbase数据库的搭建与交互任务，以及前端搭建的任务。在实验过程中，我了解了如何使用 happybase 库提供的接口，并将它们与 HBase 的服务相结合。其次，我还学习到了如何在 Python 中定义对象并将其与 HBase 数据库中的条目进行关联。本次实验让我更加熟悉了 Python 中与数据库交互的操作方法，也提升了我在数据管理方面的能力。同时，了解 happybase 库的使用，极大地提升了我利用现有工具来简化数据管理任务的能力。
  
  在前端搭建的过程中，我还熟悉了前端的Gradio框架。使用 Gradio 框架搭建前端界面非常直观且灵活，能够快速生成一个漂亮的用户界面。它的设计使得用户输入和输出结果的展示变得简单直观，无需过多的代码即可实现。这个过程不仅让我理解了如何运用 Gradio 框架创建用户友好的前端界面，还让我对如何将用户输入与后端处理有机结合有了更深刻的认识。

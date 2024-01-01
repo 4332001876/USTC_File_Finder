@@ -8,13 +8,16 @@ class ServerBackend:
         self.search_engine = search_engine
 
     def get_query_result_ui(self, keyword, source=None):
+        # 从搜索引擎中获取查询结果
         file_records = self.search_engine.query(keyword, source)
+        # 将查询结果转为DataFrame
         df= pd.DataFrame(columns=["title","time","source"])
         for file_record in file_records:
             link_element_code = "[%s](%s)"%(file_record.title, file_record.url)
             # link_element_code = "<a href=\"%s\">%s<\\a>"%(file_record.url, file_record.title)
             df.loc[len(df)] = [link_element_code, file_record.time, file_record.source]
 
+        # 设置表格样式
         # Function to apply text color
         def highlight_cols(x): 
             df = x.copy() 

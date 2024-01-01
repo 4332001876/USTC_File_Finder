@@ -15,6 +15,8 @@
 <img src="./pic/system_procedure.png" width="100%" style="margin: 0 auto;">
 
 网站已经在云服务器上部署，可以通过[USTC File Finder](http://47.76.73.185:7860/)来访问。
+也可扫描以下二维码访问：
+<img src="./pic/project_QR_code.png" width="50%" style="margin: 0 auto;">
 
 <img src="./pic/final_website.png" width="100%" style="margin: 0 auto;">
 
@@ -35,6 +37,14 @@ USTC_File_Finder
 ```
 
 其中`crawler`包含了爬虫部分的代码，`data_access`包含了HBase数据库访问及ElasticSearch与Milvus查询的代码，`server`包含了前端及其所需后端逻辑的代码，`config.py`包含了整个项目的配置信息，`main.py`是项目的入口，`test.py`包含了测试代码，定义了一个`Tester.py`类，用于测试各个模块的功能。
+
+### 项目依赖项
+项目依赖项及其版本如下：
+- JDK:8u171
+- Hadoop:2.10.2
+- HBase:2.5.5
+- ElasticSearch:7.17.1
+- Milvus:v2.3.1
 
 ### 爬虫
 crawler文件夹下的文件结构为:
@@ -444,58 +454,57 @@ def merge_search_result_simple(self, es_rowkeys, milvus_rowkeys):
 ### 前端
 我们使用了gradio框架搭建了一个简单的前端，用于接收用户的查询请求，并美观地展示查询结果。
 
+页面整体布局如下：
 <img src="./pic/final_website.png" width="100%" style="margin: 0 auto;">
 
-页面整体布局定义如下：
+页面使用了查询关键词输入框和文件来源选择框来接受用户输入，使用了一个`Query`按钮来触发查询，并使用了一个表格组件来展示查询结果。
+
+我们对页面样式进行了以下细节上的修饰：
+- 将表格内信息设为链接样式，点击即可跳转至文件所在网站。其颜色RGB值设为`#2440b3`，与百度搜索得到链接的样式一致
+- 加入了一些emoji表情点缀页面，使页面更加生动有趣
+
+其中表格样式使用了`pd.DataFrame.style`模块来处理。我们只需定义每一格的样式，再使用`pd.DataFrame.style.apply`函数，即可将样式应用到整个表格上。具体实现如下：
 ```python
-def build_page(self):    
-    with gr.Blocks(title="USTC File Finder") as page: 
-        gr.Markdown("# 📄 USTC File Finder")
-        gr.Markdown("Use the search engine to find the files you want.")   
+def get_query_result_ui(self, keyword, source=None):
+    # 从搜索引擎中获取查询结果
+    file_records = self.search_engine.query(keyword, source)
+    # 将查询结果转为DataFrame
+    df= pd.DataFrame(columns=["title","time","source"])
+    for file_record in file_records:
+        link_element_code = "[%s](%s)"%(file_record.title, file_record.url)
+        # link_element_code = "<a href=\"%s\">%s<\\a>"%(file_record.url, file_record.title)
+        df.loc[len(df)] = [link_element_code, file_record.time, file_record.source]
 
-        with gr.Row() as row:
-            input_keyword = gr.Textbox("", label="Keyword", placeholder="Input the keyword here")
-            input_source = gr.Dropdown(
-                choices=[Config.SOURCE_ALL]+Config.SOURCE_CHOICES,
-                label="Source",
-                value=Config.SOURCE_ALL
-            )
-        
-        image_button = gr.Button("Query",scale=1)
-        
-        gr.Markdown("## 📂 Result")
-        gr.Markdown("Click on the title to access the file.")   
-        
-        # ui_content=[]
-        table_output = gr.DataFrame(
-            headers=["title", "time", "source"],
-            datatype=["markdown", "str", "str"],
-            row_count=(1, 'dynamic'),
-            col_count=(3, "fixed")
-        )
-        # ui_content.append(table_output)
-
-        image_button.click(fn=self.server_backend.get_query_result_ui, inputs=[input_keyword, input_source], outputs=table_output, api_name="greet")
-
-    return page
+    # 设置表格样式
+    # Function to apply text color
+    def highlight_cols(x): 
+        df = x.copy() 
+        df.loc[:, :] = 'color: black'
+        df["title"] = 'color: #2440b3; font-weight: 500;'
+        return df 
+    # Applying the style function
+    df = df.style.apply(highlight_cols, axis = None)
+    ui_content = df
+    return ui_content
 ```
-
-页面定义了查询关键词输入框和文件来源选择框
-
-网站已经在云服务器上部署，其网址为：http://47.76.73.185:7860/
-欢迎大家访问和体验！
 
 ## 实现功能介绍
 
-- 对文件标题进行检索
-- 可以按文件来源筛选文件
-- 可以按时间顺序对文件进行排序
+我们实现的功能如下：
+- 对文件标题进行检索，支持分词查询、模糊查询、查询结果排序
+- 可以按文件来源筛选文件，可通过下拉选择框设置，如指定搜索结果中仅含有财务处的文件
+- 以友好的、可交互的表格形式展示结果，文件标题为可点击跳转的链接样式，同时点击表头的三角形符号可以按时间顺序对文件进行排序
 
 <img src="./pic/final_website_search_教学质量.png" width="100%" style="margin: 0 auto;">
 
+网站已经在云服务器上部署，其网址为：http://47.76.73.185:7860/
+也可扫描以下二维码访问：
+<img src="./pic/project_QR_code.png" width="50%" style="margin: 0 auto;">
+
+欢迎大家访问和体验！
 
 ## 核心代码块
-实验报告要求的
+实验报告要求的核心代码内容已在上述分模块介绍中给出，此处不再重复。
 
 
 ## 组员总结与心得
@@ -519,3 +528,54 @@ def build_page(self):
  在本次实验中我主要负责hbase数据库的搭建与交互任务，以及前端搭建的任务。在实验过程中，我了解了如何使用 happybase 库提供的接口，并将它们与 HBase 的服务相结合。其次，我还学习到了如何在 Python 中定义对象并将其与 HBase 数据库中的条目进行关联。本次实验让我更加熟悉了 Python 中与数据库交互的操作方法，也提升了我在数据管理方面的能力。同时，了解 happybase 库的使用，极大地提升了我利用现有工具来简化数据管理任务的能力。
  
  在前端搭建的过程中，我还熟悉了前端的Gradio框架。使用 Gradio 框架搭建前端界面非常直观且灵活，能够快速生成一个漂亮的用户界面。它的设计使得用户输入和输出结果的展示变得简单直观，无需过多的代码即可实现。这个过程不仅让我理解了如何运用 Gradio 框架创建用户友好的前端界面，还让我对如何将用户输入与后端处理有机结合有了更深刻的认识。
+
+
+## 附：服务器端部署指南
+本项目需要在hbase服务、ElasticSearch服务与milvus服务开启的情况下运行
+
+## 启动milvus服务
+在docker开启的情况下，运行以下命令启动milvus服务
+```bash
+cd <project_path>/env/milvus
+docker-compose up -d
+```
+若容器已构建，可直接运行`docker start [OPTIONS] CONTAINER [CONTAINER...]`命令启动milvus服务
+
+## 启动ElasticSearch服务
+同上，启动ElaticSearch的docker容器
+
+## 配置Hbase
+除常规配置外，需要在hbase-site.xml中添加以下配置
+```xml
+<property>
+  <name>hbase.regionserver.thrift.address</name>
+  <value>0.0.0.0</value>
+</property>
+<property>
+  <name>hbase.regionserver.thrift.port</name>
+  <value>9090</value>
+</property>
+<property>
+  <name>hbase.regionserver.thrift.http</name>
+  <value>true</value>
+</property>
+<property>
+  <name>hbase.thrift.server.socket.read.timeout</name>
+  <value>0</value>
+</property>
+```
+
+特别是`hbase.thrift.server.socket.read.timeout`必须设置为0，否则超过一定时间（默认60s）没有对hbase数据库进行操作后，HBase的Thrift服务会自动断开连接，从而Python端会出现`TTransportException(type=4, message='TSocket read 0 bytes')`错误(参考github中的issue:https://github.com/python-happybase/happybase/issues/130)。
+
+## 启动hbase服务
+```bash
+start-all.sh
+start-hbase.sh
+hbase-daemon.sh start thrift -p 9090 --infoport 9091
+```
+
+## 运行项目
+```bash
+cd <project_path>/src
+nohup python3 main.py >/dev/null 2>&1 &
+```

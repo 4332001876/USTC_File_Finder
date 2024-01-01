@@ -54,21 +54,24 @@ class MilvusHelper:
         self.set_collection()
         if self.collection.has_index():
             return None
-        default_index = {"index_type": Config.MILVUS_INDEX_TYPE, "metric_type": Config.MILVUS_METRIC_TYPE, "params": {"nlist": 16384}}
-        # * nlist:16384后续可注意是否修改
+        # * index_type: 索引所用算法，如IVF_FLAT等; metric_type: 距离度量，如余弦相似度、L2距离等; nlist: 索引聚类的簇数
+        default_index = {"index_type": Config.MILVUS_INDEX_TYPE, "metric_type": Config.MILVUS_METRIC_TYPE, "params": {"nlist": 128}}
         status = self.collection.create_index(field_name="file_title_embedding", index_params=default_index, timeout=60)
         return status
         
     def search_vector(self, file_title_embedding, top_k):
         # Search vector in milvus collection
         vectors = [file_title_embedding]
+        # 将向量类型转换为数据类型np.float32的numpy.ndarray
         for i, vector in enumerate(vectors):
             if isinstance(vector, torch.Tensor):
                 vectors[i] = vector.detach().numpy()
             if isinstance(vector, np.ndarray):
                 vectors[i] = vector.astype(np.float32)
+        # 加载milvus collection
         self.set_collection()
         self.collection.load()
+        # 进行向量搜索，返回搜索结果
         search_params = {"metric_type": Config.MILVUS_METRIC_TYPE, "params": {"nprobe": 16}}
         res = self.collection.search(vectors, anns_field="file_title_embedding", param=search_params, limit=top_k)
         # res[0].ids:get the IDs of all returned hits

@@ -9,7 +9,12 @@
 
 ## 技术路线
 ### 概述
-我们基于HBase, ElasticSearch, Milvus等框架及其Python API实现了一个文件查询系统，用于查找中科大各校内网站的在线文件。我们使用爬虫来从各个网站爬取各文件的标题、URL、日期、来源等信息，并将这些信息存储到HBase数据库中，同时在ElasticSearch搜索引擎与Milvus向量查询数据库建立查询索引。我们使用ElasticSearch来对文件的标题、来源等信息进行检索，同时使用Milvus来对文件标题的embedding进行向量查询以扩展搜索结果。最终我们使用gradio框架搭建了一个简单的前端，用于接收用户的查询请求，并美观地展示查询结果。网站已经在云服务器上部署，可以通过[USTC File Finder](http://47.76.73.185:7860/)来访问。
+我们基于HBase, ElasticSearch, Milvus等框架及其Python API实现了一个文件查询系统，用于查找中科大各校内网站的在线文件。我们使用爬虫来从各个网站爬取各文件的标题、URL、日期、来源等信息，并将这些信息存储到HBase数据库中，同时在ElasticSearch搜索引擎与Milvus向量查询数据库建立查询索引，以便用户以关键词检索文件标题。我们使用ElasticSearch来对文件的标题、来源等信息进行检索，同时使用Milvus来对文件标题的embedding进行向量查询以扩展搜索结果。搜索结果以rowkey与Hbase数据库关联，按这些rowkey从HBase数据库中读出文件信息。最终我们使用gradio框架搭建了一个简单的前端，用于接收用户的查询请求，并美观地展示查询结果。
+
+系统工作流程如下面泳道图所示：
+<img src="./pic/system_procedure.png" width="100%" style="margin: 0 auto;">
+
+网站已经在云服务器上部署，可以通过[USTC File Finder](http://47.76.73.185:7860/)来访问。
 
 <img src="./pic/final_website.png" width="100%" style="margin: 0 auto;">
 
@@ -166,6 +171,48 @@ crawler文件夹下的文件结构为:
 
 我们实现了一个`HbaseHelper`类，用来管理与HBase数据库之间的连接与增删改查操作。我们还实现了以我们项目定义的`FileRecord`文件信息类为API的数据库交互函数，包括将`FileRecord`对象存入HBase数据库或覆盖HBase数据库中原有条目的`put_file`函数，以及将HBase数据库中读出数据转换为`FileRecord`对象的`get_file`函数。
 
+其中，`FileRecord`类的定义如下：
+```python
+class FileRecord:
+    def __init__(self, title, url, time, source, file_type, file_type_2) -> None:
+        self.title = str(title)
+        self.url = str(url)
+        self.time = str(time)
+        self.source = str(source)
+        self.file_type = str(file_type)
+        self.file_type_2 = str(file_type_2)
+
+    def __str__(self) -> str:
+        return f'{self.title},{self.url},{self.time},{self.source},{self.file_type},{self.file_type2}'
+
+    def get_hbase_data_format(self):
+        return {
+            b'info:title': self.title.encode(), # "string".encode() -> b"string" (bytes), 
+            b'info:url': self.url.encode(),
+            b'info:time': self.time.encode(),
+            b'info:source': self.source.encode(),
+            b'info:file_type': self.file_type.encode(),
+            b'info:file_type_2': self.file_type_2.encode()
+        }
+```
+我们将文件信息各字段存入的FileRecord类中，并实现了将其转为HBase数据接口的函数`get_hbase_data_format`，将类信息转为happybase库要求的字节流key-value对形式，以便于将其存入HBase数据库。
+
+`HbaseHelper`中，我们在这里仅讲解最复杂的`put_file`函数（因其需要管理自增计数器），其实现如下：
+```python
+class HbaseHelper:
+    # ...
+    def put_file(self, file_record: FileRecord):
+        increment_id = self.table.counter_inc(b'row_increment_id', b'counter:increment_id')
+        row_key_str = f'row_{increment_id}'
+        row_key = row_key_str.encode()
+        self.put(row_key, file_record.get_hbase_data_format())
+        return increment_id, row_key_str
+    def put(self, row_key, data):
+        self.table.put(row_key, data)
+    # ...
+```
+使用`Table.counter_inc`函数可以使自增计数器加1，并返回自增后的值。计数器的值将被用于实现类似于自增主键的功能，即用于将row_key命名为`f'row_{increment_id}'`，这将保证各文件的row_key不同，同时这些row_key将用来关联HBase数据库与其它查询数据库。插入数据时，我们直接调用前面写好的`FileRecord.get_hbase_data_format`函数，将其转为HBase数据接口的字节流key-value对形式，同时`rowkey`也转为字节流形式，再将其存入HBase数据库。
+
 数据库内存储的内容结构如下：
 - 在列族`info`中我们存储了如下文件信息：
 
@@ -207,7 +254,7 @@ crawler文件夹下的文件结构为:
 由于HBase对搜索功能几乎没有支持，因此我们使用ElasticSearch来对文件的标题、来源等信息进行检索。Elasticsearch是一个分布式、RESTful风格的搜索和数据分析引擎，支持分词查询、模糊查询、查询结果排序，非常适用于当前文本查询的场景。由于其原生支持分布式部署，因此可以保证我们项目的可扩展性。
 我们使用Python的ElasticSearch库来实现我们的项目与ElasticSearch搜索引擎之间的交互。
 
-我们使用了docker来部署Milvus，`docker-compose.yml`文件见env文件夹。
+我们使用了docker来部署Milvus，`docker-compose.yml`文件见env文件夹（使用时需要按本地相应路径改动）。
 
 我们实现了`ElasticsearchHelper`类，用来管理ElasticSearch的连接及增删改查操作。
 
@@ -240,6 +287,12 @@ query = {
     }
 }
 ```
+最后，将上述查询语句作为`body`参数传入`Elasticsearch.search`函数，即可进行查询。这里另外传入了参数`size=100`表示最多返回一百个查询结果。查询结果返回文件的row_key，以row_key的形式与原HBase数据库关联。
+```python
+results = self.es.search(index=Config.ELASTIC_SEARCH_INDEX_NAME, size=100, body=query)
+rowkeys = [result['_source']["rowkey"] for result in results['hits']['hits']]
+return rowkeys
+```
 
 搜索结果返回文件的row_key，以row_key的形式与原HBase数据库关联。
 
@@ -266,11 +319,55 @@ Milvus 是一个云原生的向量数据库，具有以下特点：
 
 我们实现了`TitleToVec`类，使用Hugging Face上最热门的中文BERT模型`bert-base-chinese`预训练模型对文件标题及查询关键词生成embedding。对每一个标题用BERT处理，并以BERT的`pooler output`（`[cls]` token对应位置的输出token，包含了整个句子的语义信息）作为标题的sentence embedding。我们以该标题的embedding作为Milvus向量查询数据库的索引。查询时，同样用BERT生成查询关键词的embedding，作为查询向量，来对文件标题进行向量查询。
 
-我们使用了docker来部署Milvus，`docker-compose.yml`文件见env文件夹。
+我们使用了docker来部署Milvus，`docker-compose.yml`文件见env文件夹。由于Milvus依赖的MinIO对象存储系统与hdfs服务端口均使用9000端口，二者互相冲突，因此我们将Milvus的MinIO对象存储系统的端口设置到了9010，minio容器启动后执行的命令改为：`minio server /minio_data --console-address ":9011" --address ":9010"`
 
 我们使用了Python的pymilvus库来实现我们的项目与Milvus数据库之间的交互，通过实现`MilvusHelper`类，来管理Milvus数据库的连接及增删改查操作。
 
-搜索结果以row_key的形式与原HBase数据库关联。
+我们为文件标题的embedding按余弦相似度建立了IVF_FLAT索引，其创建代码如下：
+```python
+def create_index(self):
+    # Create IVF_FLAT index on milvus collection
+    self.set_collection()
+    if self.collection.has_index():
+        return None
+    # * index_type: 索引所用算法，如IVF_FLAT等; metric_type: 距离度量，如余弦相似度、L2距离等; nlist: 索引聚类的簇数
+    default_index = {"index_type": Config.MILVUS_INDEX_TYPE, "metric_type": Config.MILVUS_METRIC_TYPE, "params": {"nlist": 128}}
+    status = self.collection.create_index(field_name="file_title_embedding", index_params=default_index, timeout=60)
+    return status
+```
+
+我们编写了如下的函数进行向量查询：
+```python
+def search_vector(self, file_title_embedding, top_k):
+    # Search vector in milvus collection
+    vectors = [file_title_embedding]
+    # 将向量类型转换为数据类型np.float32的numpy.ndarray
+    for i, vector in enumerate(vectors):
+        if isinstance(vector, torch.Tensor):
+            vectors[i] = vector.detach().numpy()
+        if isinstance(vector, np.ndarray):
+            vectors[i] = vector.astype(np.float32)
+    # 加载milvus collection
+    self.set_collection()
+    self.collection.load()
+    # 进行向量搜索，返回搜索结果
+    search_params = {"metric_type": Config.MILVUS_METRIC_TYPE, "params": {"nprobe": 16}}
+    res = self.collection.search(vectors, anns_field="file_title_embedding", param=search_params, limit=top_k)
+    # res[0].ids:get the IDs of all returned hits
+    # res[0].distances:get the distances to the query vector from all returned hits
+    res_ids = res[0].ids
+    rowkeys = [f'row_{res_id}' for res_id in res_ids]
+    return rowkeys
+```
+
+函数先将向量类型转换为数据类型np.float32的numpy数组，然后加载milvus collection，最后进行向量搜索，返回搜索结果。搜索结果返回文件的rowkey，以rowkey的形式与原HBase数据库关联。
+
+#### 查询结果展示
+
+我们对Milvus的查询结果进行了测试，发现其查询结果与关键词关联很小，效果不佳（如下图）。又因其会大幅增加查询开销，因此我们最终部署的版本选择不使用Milvus向量查询数据库，仅保留了开启它的选项。
+
+<img src="./pic/vector_db_result_1.png" width="100%" style="margin: 0 auto;">
+
 
 
 ### 搜索引擎管理
@@ -285,7 +382,11 @@ Milvus 是一个云原生的向量数据库，具有以下特点：
 
 ## 实现功能介绍
 
+- 对文件标题进行检索
+- 可以按文件来源筛选文件
+- 可以按时间顺序对文件进行排序
 
+<img src="./pic/final_website_search_教学质量.png" width="100%" style="margin: 0 auto;">
 
 
 ## 核心代码块
@@ -295,6 +396,10 @@ Milvus 是一个云原生的向量数据库，具有以下特点：
 ## 组员总结与心得
 ### 罗浩铭
 我实现了
+
+- 搭建了一个简单的搜索引擎系统
+- 磨练了大数据系统能力
+- 实现了一个实用的项目
 
 在这次实验中，我磨练了我使用各大数据框架的技术，提高了我对大数据系统特别是搜索引擎等技术的理解。相信在数据处理需求日益
 

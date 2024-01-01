@@ -49,18 +49,22 @@ class SearchEngine:
             self.insert(file_record)
     
     def query(self, keyword, source=None):
+        # 先从es中搜索
         rowkeys = self.es.query(keyword, source)
         if len(rowkeys)>Config.TOP_K:
             rowkeys = rowkeys[:Config.TOP_K]
 
+        # 若开启了向量查询，再从milvus中搜索
         if self.use_milvus:
             title_embedding = self.title_to_vec.generate_embedding(keyword)
             milvus_rowkeys = self.milvus.search_vector(title_embedding, Config.MILVUS_TOP_K)
-            rowkeys = self.merge_search_result_simple(rowkeys, milvus_rowkeys)
+            rowkeys = self.merge_search_result_simple(rowkeys, milvus_rowkeys) # 合并搜索结果，并保证搜索结果的排序
 
+        # 以rowkey从hbase中获取文件信息
         file_records = []
         for rowkey in rowkeys:
             file_record = self.hbase.get_file(rowkey)
+            # 校验文件来源网站
             if (source is not None) and source != Config.SOURCE_ALL:
                 if file_record.source != source:
                     continue

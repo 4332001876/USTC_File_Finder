@@ -13,8 +13,7 @@ class ServerFrontend:
         self.server_backend = server_backend
         self.page = self.build_page()
 
-    def build_page(self):
-        
+    def build_page(self):    
         with gr.Blocks(title="USTC File Finder") as page:
             
             gr.Markdown("# 📄 USTC File Finder")

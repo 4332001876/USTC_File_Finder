@@ -250,6 +250,8 @@ class HbaseHelper:
 
 特别是`hbase.thrift.server.socket.read.timeout`必须设置为0，否则超过一定时间（默认60s）没有对hbase数据库进行操作后，HBase的Thrift服务会自动断开连接，从而Python端会出现`TTransportException(type=4, message='TSocket read 0 bytes')`错误(参考github中的issue:https://github.com/python-happybase/happybase/issues/130)。
 
+<img src="./pic/TTransportException solution.png" width="100%" style="margin: 0 auto;">
+
 ### elastic search
 由于HBase对搜索功能几乎没有支持，因此我们使用ElasticSearch来对文件的标题、来源等信息进行检索。Elasticsearch是一个分布式、RESTful风格的搜索和数据分析引擎，支持分词查询、模糊查询、查询结果排序，非常适用于当前文本查询的场景。由于其原生支持分布式部署，因此可以保证我们项目的可扩展性。
 我们使用Python的ElasticSearch库来实现我们的项目与ElasticSearch搜索引擎之间的交互。
@@ -317,7 +319,36 @@ Milvus 是一个云原生的向量数据库，具有以下特点：
 
 由于其原生支持分布式部署，因此可以保证我们项目的可扩展性。
 
-我们实现了`TitleToVec`类，使用Hugging Face上最热门的中文BERT模型`bert-base-chinese`预训练模型对文件标题及查询关键词生成embedding。对每一个标题用BERT处理，并以BERT的`pooler output`（`[cls]` token对应位置的输出token，包含了整个句子的语义信息）作为标题的sentence embedding。我们以该标题的embedding作为Milvus向量查询数据库的索引。查询时，同样用BERT生成查询关键词的embedding，作为查询向量，来对文件标题进行向量查询。
+我们实现了`TitleToVec`类，使用Hugging Face上最热门的中文BERT模型`bert-base-chinese`预训练模型对文件标题及查询关键词生成embedding。对每一个标题用BERT处理，并以BERT的`pooler output`（下图红框所示向量，即`[cls]` token对应位置的输出token，包含了整个句子的语义信息）作为标题的sentence embedding。我们以该标题的embedding作为Milvus向量查询数据库的索引。查询时，同样用BERT生成查询关键词的embedding，作为查询向量，来对文件标题进行向量查询。
+
+<img src="./pic/bert_pooler_output.png" width="50%" style="margin: 0 auto;">
+
+其具体实现如下：
+```python
+class TitleToVec:
+    def __init__(self) -> None:
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.tokenizer = BertTokenizer.from_pretrained(
+            Config.BERT_BASE_CHINESE_PATH, use_safetensors=True
+        )
+        self.model = BertModel.from_pretrained(
+            Config.BERT_BASE_CHINESE_PATH, use_safetensors=True
+        ).to(self.device)
+
+    def generate_embedding(self, file_title):
+        with torch.no_grad():
+            inputs = self.tokenizer(
+                file_title, truncation=True, return_tensors="pt", max_length=512
+            )
+            outputs = self.model(
+                inputs.input_ids.to(self.device),
+                inputs.token_type_ids.to(self.device),
+                inputs.attention_mask.to(self.device),
+            )
+
+            file_title_embedding = outputs.pooler_output.cpu()  # 使用pooler_output作为标签的向量表示
+            return file_title_embedding.reshape(-1)
+```
 
 我们使用了docker来部署Milvus，`docker-compose.yml`文件见env文件夹。由于Milvus依赖的MinIO对象存储系统与hdfs服务端口均使用9000端口，二者互相冲突，因此我们将Milvus的MinIO对象存储系统的端口设置到了9010，minio容器启动后执行的命令改为：`minio server /minio_data --console-address ":9011" --address ":9010"`
 
@@ -373,9 +404,83 @@ def search_vector(self, file_title_embedding, top_k):
 ### 搜索引擎管理
 我们实现了一个`SearchEngine`类，用来ElasticSearch与Milvus向量数据库的查询，整合多来源的查询结果，并以查询得到的条目的row_key从HBase数据库中读出数据。
 
+其中最核心的搜索函数实现如下：
+```python
+def query(self, keyword, source=None):
+    # 先从es中搜索
+    rowkeys = self.es.query(keyword, source)
+    if len(rowkeys)>Config.TOP_K:
+        rowkeys = rowkeys[:Config.TOP_K]
+
+    # 若开启了向量查询，再从milvus中搜索
+    if self.use_milvus:
+        title_embedding = self.title_to_vec.generate_embedding(keyword)
+        milvus_rowkeys = self.milvus.search_vector(title_embedding, Config.MILVUS_TOP_K)
+        rowkeys = self.merge_search_result_simple(rowkeys, milvus_rowkeys) # 合并搜索结果，并保证搜索结果的排序
+
+    # 以rowkey从hbase中获取文件信息
+    file_records = []
+    for rowkey in rowkeys:
+        file_record = self.hbase.get_file(rowkey)
+        # 校验文件来源网站
+        if (source is not None) and source != Config.SOURCE_ALL:
+            if file_record.source != source:
+                continue
+        file_records.append(file_record)
+    return file_records
+def merge_search_result_simple(self, es_rowkeys, milvus_rowkeys):
+    rowkeys = es_rowkeys
+    es_rowkeys_set = set(es_rowkeys)
+    for rowkey in milvus_rowkeys:
+        if rowkey not in es_rowkeys_set:
+            rowkeys.append(rowkey)
+
+    if len(rowkeys)>Config.TOP_K:
+        rowkeys = rowkeys[:Config.TOP_K]      
+    return rowkeys
+```
+查询过程中，先从ElasticSearch中搜索，并只取前`Config.TOP_K`个结果。若开启了向量查询，再从Milvus中进行搜索，并合并二者的搜索结果。由于Milvus查询效果差，我们最终使用的合并策略是将Milvus的查询结果并至原查询结果中（之前写过一个更复杂的，用于将二者搜索结果交替展示），我们加入了判断保证已经在原查询结果中的项不会重复并入，并保证最终结果数不超过`Config.TOP_K`个。最后以搜索结果中的row_key从HBase数据库中读出数据并返回。
+
 ### 前端
 我们使用了gradio框架搭建了一个简单的前端，用于接收用户的查询请求，并美观地展示查询结果。
 
+<img src="./pic/final_website.png" width="100%" style="margin: 0 auto;">
+
+页面整体布局定义如下：
+```python
+def build_page(self):    
+    with gr.Blocks(title="USTC File Finder") as page: 
+        gr.Markdown("# 📄 USTC File Finder")
+        gr.Markdown("Use the search engine to find the files you want.")   
+
+        with gr.Row() as row:
+            input_keyword = gr.Textbox("", label="Keyword", placeholder="Input the keyword here")
+            input_source = gr.Dropdown(
+                choices=[Config.SOURCE_ALL]+Config.SOURCE_CHOICES,
+                label="Source",
+                value=Config.SOURCE_ALL
+            )
+        
+        image_button = gr.Button("Query",scale=1)
+        
+        gr.Markdown("## 📂 Result")
+        gr.Markdown("Click on the title to access the file.")   
+        
+        # ui_content=[]
+        table_output = gr.DataFrame(
+            headers=["title", "time", "source"],
+            datatype=["markdown", "str", "str"],
+            row_count=(1, 'dynamic'),
+            col_count=(3, "fixed")
+        )
+        # ui_content.append(table_output)
+
+        image_button.click(fn=self.server_backend.get_query_result_ui, inputs=[input_keyword, input_source], outputs=table_output, api_name="greet")
+
+    return page
+```
+
+页面定义了查询关键词输入框和文件来源选择框
 
 网站已经在云服务器上部署，其网址为：http://47.76.73.185:7860/
 欢迎大家访问和体验！

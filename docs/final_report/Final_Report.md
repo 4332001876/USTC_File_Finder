@@ -89,7 +89,7 @@ crawler文件夹下的文件结构为:
         {
             "info": "title",    # 定位对象
             "method": "find",   # 定位方法
-            "args": "a",        # 定位对象的类型。可为字符串（不需要额外辅助定位参数），也可为字典（需要额外辅助定位参数）
+            "args": "a",        # 定位对象的类型。可为字符串（不需要额外辅助定位参数），也可为列表（需要额外辅助定位参数）
             "args2": "text"     # 提取出对象的形式
         },
         {
@@ -120,11 +120,176 @@ crawler文件夹下的文件结构为:
 #### crawler.py函数：
 &emsp;&emsp;在爬虫函数中，定义了一个爬虫类。类中有以下功能函数：
 - <kbd>fetch_data</kbd>：通过指定的url和编码方式，读取网站html结构的文本信息
+  ```python
+  def fetch_data(self, url, encoding):
+        """Fetch data from url. Return the content of the response."""
+        time.sleep(Config.SLEEP_TIME)  # sleep for n second to avoid being blocked
+        headers = {"User-Agent": Config.USER_AGENT, 'Cookie': Config.COOKIE}
+        response = requests.get(url, headers=headers)
+        if encoding:
+            response.encoding = encoding
+        return response.text
+  ```
 - <kbd>fetch_file</kbd>：从web_list.json获取出网站的结构信息，利用结构信息定位到文件所在的列表
+  ```python
+  def fetch_file(self, url, html_locator, encoding):
+        """Fetch file from url. Return a list of bs4.element.Tag."""
+        bs = BeautifulSoup(self.fetch_data(url, encoding), 'html.parser')
+
+        for operation in html_locator:
+            method = operation['method']
+            args = operation['args']
+            kwargs = operation.get('kwargs', None)
+
+            if method == 'find':
+                if kwargs:
+                    bs = bs.find(args, **kwargs)
+                else:
+                    bs = bs.find(args)
+
+            elif method == 'find_all':
+                if kwargs:
+                    bs = bs.find_all(args, **kwargs)
+                else:
+                    bs = bs.find_all(args)
+            
+            if bs == None:
+                return None
+
+        return bs
+  ```
+
 - <kbd>get_info</kbd>：实现根据web_list.json中存储的内容对应结构信息，返回对应内容的文本
-- <kbd>fetch_file_list</kbd>：调用fetch_file得到文件列表后，对列表中的项逐个遍历，利用web_list.json文件中所存储的各项内容的结构信息，读取出每个文件的url、时间、标题等内容，并对数据格式进行一定处理
+  ```python
+  def get_info(self, bs_result, url, method, args, kargs, args2):
+
+        if method == 'find' and kargs == None:
+            if args2 == 'text':
+                return bs_result.find(args).text.strip()
+            elif args2 == 'href':
+                return urljoin(url, bs_result.find(args)[args2])
+            else:
+                return bs_result.find(args)[args2]
+
+        elif method == 'find' and kargs != None:
+            if args2 == 'text':
+                return bs_result.find(args, **kargs).text.strip()
+            elif args2 == 'href':
+                return urljoin(url, bs_result.find(args, **kargs)[args2])
+            else:
+                return bs_result.find(args, **kargs)[args2]
+
+        elif method == None:
+            if args2 == 'text':
+                return bs_result.text.strip()
+            elif args2 == 'href':
+                return urljoin(url, bs_result[args2])
+  ```
+- <kbd>fetch_file_list</kbd>：调用fetch_file得到文件列表后，对列表中的项逐个遍历，利用web_list.json文件中所存储的各项内容的结构信息，读取出每个文件的url、时间、标题等内容，并对数据格式进行一定处理，来保证返回的时间数据格式统一
+  ```python
+  def fetch_file_list(self, url, encoding, html_locator, info_locator , source_name, file_type = None, file_type_2 = None):
+        """Fetch file list from url. Return a list of dict."""
+
+        # 极其特殊的先研院网站翻页机制，除了该网站外，翻页时均不需要对index_1作特殊处理
+        if url == 'https://iat.ustc.edu.cn/iat/x161/index_1.html':
+            url = 'https://iat.ustc.edu.cn/iat/x161/index.html'
+
+        bs_result = self.fetch_file(url, html_locator, encoding)
+
+        if bs_result == None:
+            return None
+        
+        result = []
+
+        for i in range(len(bs_result)):
+            result.append(dict())
+            
+            for operation in info_locator:
+                info = operation['info']
+                method = operation['method']
+                args = operation['args']
+                args2 = operation['args2']
+                kargs = None
+
+                if type(args) == list:
+                    kargs = args[1]
+                    args = args[0]
+
+                result[i][info] = self.get_info(bs_result[i], url, method, args, kargs, args2)
+
+            
+            if result[i]['time'] == None or result[i]['time'] == '': 
+                pass
+
+            elif result[i]['time'].count('\n') == 1:
+                parts = result[i]['time'].split('\n')
+                result[i]['time'] = f'{parts[1]}-{parts[0]}'
+
+            elif '发布时间' in result[i]['time']:
+                result[i]['time'] = result[i]['time'][5:15]
+
+            elif '[' == result[i]['time'][0]:
+                result[i]['time'] = result[i]['time'][1:-1]
+
+            elif result[i]['time'].count('年') == 1 and result[i]['time'].count('月') == 1 and result[i]['time'].count('日') == 1:
+                result[i]['time'] = result[i]['time'].replace('年', '-').replace('月', '-').replace('日', '')
+
+            # 检测时间末尾是否带有标题，如有，则去除时间中的标题。超算中心网站特性
+            if result[i]['title'] in result[i]['time']:
+                result[i]['time'] = result[i]['time'].replace(result[i]['title'], '').strip()[:-1]
+            
+            # 检测标题末尾是否有[xxxx-xx-xx]的时间信息，如有，在标题中去除，并将对应内容移动到时间处。时间处内容不包括括号(软件学院网站bug)
+            if result[i]['title'][-11:-1].count('-') == 2:
+                result[i]['time'] = result[i]['title'][-11:-1]
+                result[i]['title'] = result[i]['title'][:-13]
+            
+
+            result[i]['source'] = source_name
+            result[i]['file_type'] = file_type
+            result[i]['file_type_2'] = file_type_2
+
+        return result
+  ```
 - <kbd>generate_file_list</kbd>：对web_list.json中的每一项（每一项对应一个网站）进行读取，并对可以翻页的网站进行翻页遍历直至无法获取内容为止。调用fetch_file_list得到文件列表并返回
+  ```python
+  def generate_file_list(self):
+        file_list = []
+        with open('web_list.json', 'r') as json_file:
+            data_list = json.load(json_file)
+
+        for data in tqdm(data_list, desc='Processing', unit='item'):
+            url = data['url']
+            encoding = data['encoding']
+            html_locator = data['html_locator']
+            info_locator = data['info_locator']
+            source_name = data['title']
+            file_type = data['dtype']
+            file_type_2 = data['dtype2']
+            flip = data['flip']
+            
+            if flip == False:
+                file_list += self.fetch_file_list(url, encoding, html_locator, info_locator, source_name, file_type, file_type_2)
+
+            else:
+                for i in range(1, 100):
+                    flip_url = url.replace('{page_num}', str(i))
+                    flip_result = self.fetch_file_list(flip_url, encoding, html_locator, info_locator, source_name, file_type, file_type_2)
+                    if flip_result == None or len(flip_result) == 0:
+                        break
+                    else:
+                        file_list += flip_result
+
+
+        return file_list
+  ```
 - <kbd>generate_file_csv</kbd>：将generate_file_list返回的文件列表写入csv文件中，以便下游数据库的接入
+  ```python
+  def generate_file_csv(self):
+        file_list = self.generate_file_list()
+        df = pd.DataFrame(file_list)
+        df.to_csv('file_list.csv', index=False)
+        return df
+  ```
 
 #### file_list.csv：
 &emsp;&emsp;存储着爬取得到的文件信息。以下为内容示例：
@@ -526,7 +691,7 @@ def get_query_result_ui(self, keyword, source=None):
 
 - 我主要参与的是爬虫部分代码的编写。在构思代码思路时，我面临着网站数量多，网站结构差异大的问题。经过一定的构思决定使用数据库存储结构的方法，来统一和精简爬虫函数、并且实现文件的自动可更新。在这个过程中，我逐渐体会到了如何通过一个良好的控制逻辑，来更好地实现项目模块的功能和可维护性
 - 在数据库的构建过程中，我也是通过不断尝试，才得到一个简单易用的框架结构，能够实现对所有网站的读取。在不断尝试的过程中，我才逐渐了解到，如何通过合理的项目设置，使数据库既精简又功能齐全
-- 同时，在接入hbase的过程中，我也磨练了自己的技术、加深了对大数据系统的理解
+- 同时，在接入hbase的过程中，我也磨练了自己的技术，了解了如何调用Happybase与数据库服务相结合，加深了对大数据系统的理解
 - 同时，在团队分工的过程中，很庆幸能遇到一群相互协作共同进步的队友。我们在不断协调沟通的过程中，也是收获颇丰
 
 ### 刘海琳
